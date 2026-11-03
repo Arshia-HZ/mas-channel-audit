@@ -1,0 +1,9 @@
+model_id: Qwen/Qwen3-1.7B
+backend: vllm
+dtype: float16            # T4 has no bfloat16
+revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+max_tokens: 1024          # provisional until PREREG.md
+max_model_len: 8192
+chat_template_kwargs:
+  enable_thinking: false  # non-thinking mode, enforced by the config validator
+stop_token_ids: [151645, 151643]   # <|im_end|>, <|endoftext|>

@@ -118,12 +118,16 @@ class MockBackend:
 
     def _solution(self, req: GenRequest, rng: random.Random, arm: str) -> str:
         pid = req.meta["problem_id"]
-        gold = int(self.world.gold[pid])
+        gold_text = self.world.gold[pid]
         p = min(1.0, max(0.0, self.world.base_p[pid] + self.effects.get(arm, 0.0)))
         if rng.random() < p:
-            answer, confidence = gold, rng.randint(60, 95)
+            answer, confidence = gold_text, rng.randint(60, 95)
         else:
-            answer, confidence = gold + rng.choice([-1, 1, 2, 3]), rng.randint(20, 70)
+            confidence = rng.randint(20, 70)
+            try:
+                answer = int(gold_text) + rng.choice([-1, 1, 2, 3])
+            except ValueError:  # non-integer gold: any different string is wrong
+                answer = f"{gold_text}?{rng.randint(1, 3)}"
         steps = "\n".join(
             f"Step {k + 1}: apply the rule here." for k in range(rng.randint(8, 14))
         )

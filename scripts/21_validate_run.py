@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from channel_audit.runner import open_run
+from channel_audit.runner import open_run, throughput_summary
 from channel_audit.validate import validate_run
 
 
@@ -28,6 +28,12 @@ def main() -> int:
         print(f"  WARN  {w}")
     print(f"gate G3 (no overflow, truncation < 5%): {'pass' if r.g3_ok else 'FAIL'}")
     print(f"leakage outcomes: {r.leakage_outcomes}")
+    t = throughput_summary(ctx.out_dir)
+    print(
+        f"throughput: {t['completion_tokens_per_s']:.0f} completion tokens/s "
+        f"({t['completion_tokens']} tokens, {t['seconds']:.1f} s, "
+        f"{t['n_batches']} backend calls)"
+    )
     print(f"{'arm':<14}{'n':>7}{'trunc':>8}{'overflow':>10}{'tokens':>10}{'SC k':>7}")
     for arm in sorted(r.counts):
         cost = r.costs.get(arm)

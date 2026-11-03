@@ -1,0 +1,10 @@
+# Base model. Its context window is only 4096 tokens, so full_solution prompts
+# plus max_tokens may overflow it: check gate G3 in the T4 run before relying on it.
+model_id: Qwen/Qwen2.5-Math-1.5B
+backend: vllm
+dtype: float16            # T4 has no bfloat16
+revision: 4a83ca6e4526a4f2da3aa259ec36c259f66b2ab2
+max_tokens: 1024          # provisional until PREREG.md
+max_model_len: 4096
+chat_template_kwargs: {}
+stop_token_ids: [151645, 151643]   # <|im_end|>, <|endoftext|>

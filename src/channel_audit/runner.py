@@ -8,8 +8,10 @@ every arm branches from the same stored round 0.
 
 from __future__ import annotations
 
+import json
+import time
+from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import NamedTuple
@@ -28,8 +30,9 @@ from channel_audit.leakage import (
     redact,
     sanitize_message,
 )
+from channel_audit.models import ModelConfig
 from channel_audit.placebo import pick_donor
-from channel_audit.schema import Generation, Graded, Problem
+from channel_audit.schema import Generation, Graded, Problem, PromptRecord
 from channel_audit.seeds import derive_seed, gen_key
 from channel_audit.store import JsonlStore
 
@@ -57,27 +60,65 @@ class RunConfig(BaseModel):
     n_pool: int = Field(default=6, ge=0)
     prompt_version: str = channels.PROMPT_VERSION
     context_limit: int = Field(default=4096, ge=1)
+    model: ModelConfig | None = None  # required for the vllm and hf backends
+    log_prompts: bool = False  # keep the chat messages of every generation
 
 
-@dataclass
 class RunContext:
-    out_dir: Path
-    cfg: RunConfig
-    backend: Backend
-    problems: list[Problem]
-    gens: JsonlStore[Generation]
-    graded: JsonlStore[Graded]
-    leakage: JsonlStore[LeakageRecord]
+    """Stores and settings of one run directory.
+
+    The backend is built on first use, so steps that only read (grading,
+    validation, comparing runs) never load a model.
+    """
+
+    def __init__(
+        self,
+        *,
+        out_dir: Path,
+        cfg: RunConfig,
+        backend: Backend | None,
+        problems: list[Problem],
+        gens: JsonlStore[Generation],
+        graded: JsonlStore[Graded],
+        leakage: JsonlStore[LeakageRecord],
+        prompts: JsonlStore[PromptRecord] | None = None,
+    ) -> None:
+        self.out_dir = out_dir
+        self.cfg = cfg
+        self.problems = problems
+        self.gens = gens
+        self.graded = graded
+        self.leakage = leakage
+        self.prompts = prompts
+        self._backend = backend
+
+    @property
+    def backend(self) -> Backend:
+        if self._backend is None:
+            self._backend = backend_for_run(self.cfg, self.problems)
+        return self._backend
 
 
 def backend_for_run(cfg: RunConfig, problems: Sequence[Problem]) -> Backend:
     if cfg.backend == "mock":
         return MockBackend(MockWorld.from_problems(problems))
-    raise NotImplementedError(f"backend {cfg.backend!r}: real backends arrive in M3")
+    if cfg.backend in ("vllm", "hf"):
+        if cfg.model is None:
+            raise ValueError(f"backend {cfg.backend!r} needs a model config")
+        if cfg.model.backend != cfg.backend:
+            raise ValueError("run backend and model config backend disagree")
+        if cfg.backend == "vllm":
+            from channel_audit.backends.vllm_engine import VllmBackend
+
+            return VllmBackend.from_config(cfg.model)
+        from channel_audit.backends.hf_engine import HfBackend
+
+        return HfBackend.from_config(cfg.model)
+    raise ValueError(f"unknown backend {cfg.backend!r}")
 
 
 def _context(
-    out: Path, cfg: RunConfig, problems: list[Problem], backend: Backend
+    out: Path, cfg: RunConfig, problems: list[Problem], backend: Backend | None
 ) -> RunContext:
     return RunContext(
         out_dir=out,
@@ -87,11 +128,14 @@ def _context(
         gens=JsonlStore(out / "generations.jsonl", Generation),
         graded=JsonlStore(out / "graded.jsonl", Graded),
         leakage=JsonlStore(out / "leakage.jsonl", LeakageRecord, key="record_key"),
+        prompts=(
+            JsonlStore(out / "prompts.jsonl", PromptRecord) if cfg.log_prompts else None
+        ),
     )
 
 
 def create_run(
-    out_dir, cfg: RunConfig, problems: Sequence[Problem], backend: Backend
+    out_dir, cfg: RunConfig, problems: Sequence[Problem], backend: Backend | None
 ) -> RunContext:
     """Start a run directory, or re-attach to one with the identical config."""
     if cfg.prompt_version != channels.PROMPT_VERSION:
@@ -119,7 +163,7 @@ def open_run(out_dir, backend: Backend | None = None) -> RunContext:
     out = Path(out_dir)
     cfg = RunConfig.model_validate_json((out / "run.json").read_text("utf-8"))
     problems = list(JsonlStore(out / "problems.jsonl", Problem, key="problem_id"))
-    return _context(out, cfg, problems, backend or backend_for_run(cfg, problems))
+    return _context(out, cfg, problems, backend)
 
 
 def identity_for(
@@ -175,11 +219,15 @@ def _execute(ctx: RunContext, planned: Sequence[Planned]) -> list[Generation]:
             )
             for p in todo
         ]
-        results = ctx.backend.generate(requests)
+        backend = ctx.backend
+        started = time.perf_counter()
+        results = backend.generate(requests)
+        seconds = time.perf_counter() - started
         if len(results) != len(requests):
             raise RuntimeError(
                 f"backend returned {len(results)} results for {len(requests)} requests"
             )
+        _log_throughput(ctx, backend, todo, results, seconds)
         for p, res in zip(todo, results, strict=True):
             ctx.gens.append(
                 Generation.create(
@@ -194,7 +242,53 @@ def _execute(ctx: RunContext, planned: Sequence[Planned]) -> list[Generation]:
                     created_at=_now(),
                 )
             )
+            if ctx.prompts is not None:
+                ctx.prompts.append(
+                    PromptRecord(gen_key=gen_key(**p.identity), messages=p.messages)
+                )
     return [ctx.gens.get(gen_key(**p.identity)) for p in planned]
+
+
+def _log_throughput(ctx: RunContext, backend: Backend, todo, results, seconds) -> None:
+    """Append one line per backend call: how many tokens, how long."""
+    completion = sum(r.completion_tokens for r in results)
+    line = {
+        "time": _now(),
+        "backend": backend.name,
+        "backend_version": backend.version,
+        "model_id": ctx.cfg.model_id,
+        "n_requests": len(results),
+        "arms": dict(Counter(p.identity["arm"] for p in todo)),
+        "prompt_tokens": sum(r.prompt_tokens for r in results),
+        "completion_tokens": completion,
+        "seconds": seconds,
+        "completion_tokens_per_s": completion / seconds if seconds > 0 else 0.0,
+    }
+    with open(ctx.out_dir / "throughput.jsonl", "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(line) + "\n")
+
+
+def throughput_summary(out_dir) -> dict:
+    """Totals over every logged backend call of a run directory."""
+    total = {
+        "n_batches": 0,
+        "n_requests": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "seconds": 0.0,
+    }
+    path = Path(out_dir) / "throughput.jsonl"
+    if path.exists():
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            rec = json.loads(raw)
+            total["n_batches"] += 1
+            for key in ("n_requests", "prompt_tokens", "completion_tokens", "seconds"):
+                total[key] += rec[key]
+    secs = total["seconds"]
+    total["completion_tokens_per_s"] = (
+        total["completion_tokens"] / secs if secs else 0.0
+    )
+    return total
 
 
 def round0_gens(ctx: RunContext, problem_id: str, replicate: int) -> list[Generation]:

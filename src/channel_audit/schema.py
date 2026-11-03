@@ -20,7 +20,7 @@ class Problem(_Record):
     level: int = Field(ge=1, le=5)
     question: str
     gold: str
-    split: Literal["screen", "pilot", "confirm"]
+    split: Literal["screen", "pilot", "confirm", "check"]
 
 
 class Generation(_Record):
@@ -71,3 +71,10 @@ class Graded(_Record):
     extraction_status: Literal["boxed", "none", "truncated"]
     confidence: int | None = Field(default=None, ge=0, le=100)
     correct: bool
+
+
+class PromptRecord(_Record):
+    """The chat messages sent for one generation (logged when requested)."""
+
+    gen_key: str
+    messages: list[dict[str, str]]
