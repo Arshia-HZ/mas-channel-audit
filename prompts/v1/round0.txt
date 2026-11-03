@@ -1,0 +1,7 @@
+Solve the following math problem step by step.
+
+Problem:
+<<question>>
+
+On the last line of your response write "Confidence: N", where N is an integer from 0 to 100 saying how likely your final answer is to be correct.
+Put your final answer in \boxed{}.

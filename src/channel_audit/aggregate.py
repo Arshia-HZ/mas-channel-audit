@@ -23,20 +23,37 @@ class Plurality:
         return len(self.winners)
 
 
-def plurality(answers: Sequence[str | None]) -> Plurality:
-    """Group equivalent answers and return the top group(s)."""
+def cluster_answers(
+    answers: Sequence[str | None],
+) -> tuple[list[int | None], list[str]]:
+    """Label each answer by its equivalence group.
+
+    Returns (labels, representatives). A label is the index of the group's
+    first member in ``representatives``; unparsable answers get None.
+    """
     reps: list[str] = []
-    counts: list[int] = []
+    labels: list[int | None] = []
     for answer in answers:
         if answer is None or not answer.strip():
+            labels.append(None)
             continue
         for i, rep in enumerate(reps):
             if answers_equivalent(rep, answer):
-                counts[i] += 1
+                labels.append(i)
                 break
         else:
             reps.append(answer)
-            counts.append(1)
+            labels.append(len(reps) - 1)
+    return labels, reps
+
+
+def plurality(answers: Sequence[str | None]) -> Plurality:
+    """Group equivalent answers and return the top group(s)."""
+    labels, reps = cluster_answers(answers)
+    counts = [0] * len(reps)
+    for label in labels:
+        if label is not None:
+            counts[label] += 1
     if not reps:
         return Plurality(winners=[], n_votes=0, top_count=0)
     top = max(counts)

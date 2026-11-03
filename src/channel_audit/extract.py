@@ -26,11 +26,21 @@ def extract_boxed(text: str) -> str | None:
     starts = [m.end() for m in _BOXED.finditer(text)]
     if not starts:
         return None
-    i, depth, buf = starts[-1], 1, []
+    end = _closing_index(text, starts[-1])
+    if end is None:
+        return None
+    return text[starts[-1] : end].strip() or None
+
+
+def _closing_index(text: str, start: int) -> int | None:
+    """Index of the ``}`` closing a group whose ``{`` sits just before ``start``.
+
+    Braces escaped as ``\\{`` and ``\\}`` do not count towards nesting.
+    """
+    i, depth = start, 1
     while i < len(text):
         ch = text[i]
         if ch == "\\" and i + 1 < len(text) and text[i + 1] in "{}":
-            buf.append(text[i : i + 2])
             i += 2
             continue
         if ch == "{":
@@ -38,10 +48,29 @@ def extract_boxed(text: str) -> str | None:
         elif ch == "}":
             depth -= 1
             if depth == 0:
-                return "".join(buf).strip() or None
-        buf.append(ch)
+                return i
         i += 1
     return None
+
+
+def strip_boxed(text: str, replacement: str = "") -> tuple[str, int]:
+    """Replace every ``\\boxed{...}`` by ``replacement``; return text and count.
+
+    An unclosed box is removed through the end of the text, so a truncated
+    answer cannot survive. Boxes nested inside a removed box are not counted.
+    """
+    out: list[str] = []
+    pos = count = 0
+    for m in _BOXED.finditer(text):
+        if m.start() < pos:
+            continue
+        end = _closing_index(text, m.end())
+        out.append(text[pos : m.start()])
+        out.append(replacement)
+        pos = len(text) if end is None else end + 1
+        count += 1
+    out.append(text[pos:])
+    return "".join(out), count
 
 
 def extract_confidence(text: str) -> int | None:

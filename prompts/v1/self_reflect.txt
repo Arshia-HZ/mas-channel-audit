@@ -1,0 +1,8 @@
+Problem:
+<<question>>
+
+Here is your solution:
+<<own_solution>>
+
+Check it and give your best final solution.
+Put your final answer in \boxed{}.

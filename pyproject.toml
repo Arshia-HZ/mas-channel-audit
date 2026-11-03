@@ -11,7 +11,8 @@ requires-python = ">=3.11"
 # Runtime dependencies are added milestone by milestone.
 # pydantic: typed, validated records. math-verify: the grader; pinned exactly
 # because a grader upgrade can change which answers count as correct.
-dependencies = ["pydantic>=2.7,<3", "math-verify==0.9.0"]
+# numpy: bootstrap resampling in analysis/stats.py.
+dependencies = ["pydantic>=2.7,<3", "math-verify==0.9.0", "numpy>=1.26"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]

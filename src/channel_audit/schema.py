@@ -62,9 +62,7 @@ class Generation(_Record):
     def create(cls, **fields) -> Self:
         """Build a record, deriving gen_key and seed from the identity fields."""
         identity = {name: fields[name] for name in IDENTITY_FIELDS}
-        return cls(
-            **fields, gen_key=gen_key(**identity), seed=derive_seed(**identity)
-        )
+        return cls(**fields, gen_key=gen_key(**identity), seed=derive_seed(**identity))
 
 
 class Graded(_Record):

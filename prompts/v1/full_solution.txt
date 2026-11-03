@@ -1,0 +1,11 @@
+Problem:
+<<question>>
+
+Here is your solution:
+<<own_solution>>
+
+Other solvers wrote these solutions:
+<<peer_solutions>>
+
+Reconsider and give your best final solution.
+Put your final answer in \boxed{}.

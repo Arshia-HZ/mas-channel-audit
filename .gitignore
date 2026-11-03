@@ -13,3 +13,4 @@ raw/
 *.jsonl
 *.torn
 .env
+runs/
