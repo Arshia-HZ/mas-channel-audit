@@ -11,4 +11,5 @@ dist/
 # Raw generations live in a private Hugging Face dataset, never in Git.
 raw/
 *.jsonl
+*.torn
 .env
