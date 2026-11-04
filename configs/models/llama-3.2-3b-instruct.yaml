@@ -4,6 +4,6 @@ backend: vllm
 dtype: float16
 revision: 0cb88a4f764b7a12671c53f0838cd831a0843b95
 max_tokens: 1024          # provisional until PREREG.md
-max_model_len: 8192
+max_model_len: 12288       # fits 3 full solutions of 2048 tokens plus the reply
 chat_template_kwargs: {}
 stop_token_ids: [128001, 128008, 128009]   # <|end_of_text|>, <|eom_id|>, <|eot_id|>

@@ -102,3 +102,18 @@ def test_loader_rejects_a_non_mapping(tmp_path):
     p.write_text("- just\n- a list\n", encoding="utf-8")
     with pytest.raises(ValueError):
         load_model_config(p)
+
+
+# The full_solution reader sees its own and two peer solutions (each up to
+# max_tokens) plus the problem, then writes its own reply of up to max_tokens.
+PROMPT_RESERVE = 1024  # problem statement and instructions
+LONG_OUTPUT = 2048  # the limit the T4 check showed is needed
+
+
+@pytest.mark.parametrize("path", FILES, ids=lambda p: p.stem)
+def test_context_fits_three_full_solutions_at_the_long_output_limit(path):
+    cfg = load_model_config(path)
+    if cfg.max_model_len < 8192:
+        pytest.skip(f"{path.stem}: native context too small; see its config comment")
+    need = 4 * max(cfg.max_tokens, LONG_OUTPUT) + PROMPT_RESERVE
+    assert cfg.max_model_len >= need, (cfg.max_model_len, need)
