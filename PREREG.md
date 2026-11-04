@@ -3,7 +3,7 @@
 Status: **draft**. It is completed at M5 and committed and timestamped before any
 confirmatory generation. Until then it only records decisions already taken, with the
 evidence behind them. Hypotheses, gates G1 to G4 and the power calculation are added at M5.
-Items marked **[confirm]** are my reading of a decision and need the owner's sign-off.
+Items marked **[confirm]** are proposed wording and need the owner's sign-off.
 
 ## 1. Problems
 
@@ -29,17 +29,24 @@ Items marked **[confirm]** are my reading of a decision and need the owner's sig
 
 ## 3. Truncation and gate G3
 
-- Truncated outputs count as incorrect. **[confirm]** As implemented, a complete
-  `\boxed{}` answer that appears before the cut-off is still an answer (2 of 41 at 1,024
-  tokens); the owner decides whether that stays or truncated outputs are always incorrect.
+- A truncated output counts as incorrect unless a complete `boxed{}` answer appears
+  before the cut-off; such an answer is the model's real response and is graded (owner
+  decision; 2 of 41 truncated outputs at 1,024 tokens). Truncation itself is always
+  reported separately, by arm.
 - Sensitivity analysis: repeat every contrast after dropping the problems on which any
   round-0 agent truncated. Round 0 is shared by all arms, so this filter does not use any
   arm's outcome.
-- G3 is evaluated and reported at M5 with the plan's thresholds (zero context overflow, arm
-  truncation under 5%). The T4 check at 2,048 tokens gave round 0 5.3%, the
-  self-consistency pool 7.0% and every arm at most 2.0%, with no arm differing from
-  `self_reflect` by more than the validator's warning gap. A round-0 or pool rate near 5% is
-  documented, not treated as a stop. **[confirm]**
+- Gate G3 (evaluated at M5), proposed wording **[confirm]**:
+  1. Context overflow must be zero (hard stop).
+  2. Each of the seven revision arms must truncate under 5% (hard stop).
+  3. Round 0 and the self-consistency pool are reported with no threshold. Every arm
+     branches from the same round 0 and shares the same pool, so their truncation cannot
+     favour one arm; the sensitivity analysis above covers it.
+  4. An arm that differs from `self_reflect` by more than 2 points of truncation is
+     flagged, and its contrasts are reported with and without the affected problems.
+- Evidence for this wording, T4 check at 2,048 tokens: round 0 5.3%, pool 7.0%, every arm
+  at most 2.0%, no arm more than 2 points from `self_reflect`, and no context overflow
+  once the window is 12,288.
 
 ## 4. Screening (M4)
 
