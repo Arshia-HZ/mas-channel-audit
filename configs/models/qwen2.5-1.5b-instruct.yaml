@@ -1,0 +1,10 @@
+# Sanity model for gate G0 only (M4): its published MATH score is the reference
+# that shows our prompt, decoding and grader reproduce a known accuracy.
+model_id: Qwen/Qwen2.5-1.5B-Instruct
+backend: vllm
+dtype: float16            # T4 has no bfloat16
+revision: 989aa7980e4cf806f80c7fef2b1adb7bc71aa306
+max_tokens: 2048
+max_model_len: 12288
+chat_template_kwargs: {}
+stop_token_ids: [151645, 151643]   # <|im_end|>, <|endoftext|>

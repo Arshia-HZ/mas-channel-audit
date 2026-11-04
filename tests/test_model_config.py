@@ -33,6 +33,7 @@ def test_the_planned_models_all_have_a_config():
         "qwen3-1.7b",
         "llama-3.2-3b-instruct",
         "qwen3-4b",
+        "qwen2.5-1.5b-instruct",
     } <= names
 
 

@@ -3,7 +3,7 @@ model_id: Qwen/Qwen3-4B
 backend: vllm
 dtype: float16
 revision: 1cfa9a7208912126459214e8b04321603b3df60c
-max_tokens: 1024          # provisional until PREREG.md
+max_tokens: 2048          # same limit for every model (T4 check on Qwen3-1.7B: 1024 cut 27%, 2048 about 5%)
 max_model_len: 12288       # fits 3 full solutions of 2048 tokens plus the reply
 chat_template_kwargs:
   enable_thinking: false

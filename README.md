@@ -8,7 +8,7 @@ Successor to [`causal-mas-distill`](https://github.com/Arshia-HZ/causal-mas-dist
 
 ## Status
 
-M0 to M2 are done. M3 (real backends) is implemented and tested against fake engines; the T4 check below has not been run yet.
+M0 to M3 are done (the T4 backend check ran; see `PREREG.md` section 2 and 3). M4 (problem freeze and model screening) is implemented and tested; the screening runs on a GPU have not been done yet.
 See `AGENTS.md` for contributor and coding-agent rules.
 
 ## Development
@@ -67,3 +67,21 @@ Read `runs/check/review_sample.md`. For reproducibility, repeat the steps into
 `runs/check2` and run `python scripts/03_repro_check.py --a runs/check --b runs/check2`.
 Only after the review, and with the owner's approval, run
 `python scripts/03_freeze_prompts.py` to freeze `prompts/v1`.
+
+## M4: frozen problems and model screening
+
+```bash
+python scripts/04_freeze_problems.py --out data/problems   # needs [data] and internet
+```
+Splits the MATH test set (pinned revision) into 300 screen, 200 pilot and the rest confirm by a
+fixed hash. Only `data/problems/split_manifest.json` is committed; the problem files are
+rebuilt and checked against its sha256.
+
+Screen one model (4 samples per problem), on a GPU, then compare:
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Arshia-HZ/mas-channel-audit/blob/main/notebooks/screen.ipynb)
+(run once per `MODEL_CONFIG`), or as commands:
+
+```bash
+python scripts/04_screen.py --model-config configs/models/qwen3-1.7b.yaml --problems data/problems --out runs/screen_qwen3-1.7b
+python scripts/04_screen_report.py --runs runs/screen_qwen3-1.7b runs/screen_qwen2.5-math-1.5b --json screen_summary.json
+```

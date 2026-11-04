@@ -37,6 +37,7 @@ ARMS: tuple[str, ...] = (
 TEMPLATE_FOR: dict[str, str] = {
     "round0": "round0",
     "sc_pool": "round0",
+    "screen": "round0",
     "failure_msg": "failure_msg",
     **{arm: arm for arm in ARMS},
     "placebo": "full_solution",
