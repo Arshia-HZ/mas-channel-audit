@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from channel_audit.channels import ARMS
 from channel_audit.runner import RunContext
 from channel_audit.schema import Generation
+from channel_audit.validate import TRUNCATION_GATE
 
 KINDS = ("round0", "sc_pool", "failure_msg", *ARMS)
 MAX_DIVERGENCES = 20
@@ -155,3 +156,57 @@ def format_review(ctx: RunContext, gens: list[Generation]) -> str:
             out.append("*(prompt not logged)*")
         out += ["", "### Output", "", "~~~~", g.text, "~~~~", ""]
     return "\n".join(out)
+
+
+def round0_summary(ctx: RunContext) -> dict:
+    """Truncation and accuracy of the round-0 generations stored so far."""
+    r0 = [g for g in ctx.gens if g.arm == "round0"]
+    if not r0:
+        raise ValueError("no round-0 generations stored")
+    graded = {r.gen_key: r for r in ctx.graded}
+    cut = [g for g in r0 if g.finish_reason == "length"]
+    done = [g for g in r0 if g.finish_reason != "length"]
+
+    def accuracy(gens: list[Generation]) -> float | None:
+        marks = [graded[g.gen_key].correct for g in gens if g.gen_key in graded]
+        return sum(marks) / len(marks) if marks else None
+
+    tokens = sorted(g.completion_tokens for g in r0)
+
+    def pct(q: float) -> int:
+        return tokens[min(len(tokens) - 1, int(len(tokens) * q))]
+
+    rate = len(cut) / len(r0)
+    return {
+        "n": len(r0),
+        "max_tokens": r0[0].max_tokens,
+        "truncated": len(cut),
+        "truncation_rate": rate,
+        "gate_g3": rate < TRUNCATION_GATE,
+        "accuracy": accuracy(r0),
+        "accuracy_finished": accuracy(done),
+        "accuracy_truncated": accuracy(cut),
+        "tokens_p50": pct(0.5),
+        "tokens_p90": pct(0.9),
+        "tokens_max": tokens[-1],
+        "n_problems_with_truncation": len({g.problem_id for g in cut}),
+    }
+
+
+def format_round0_summary(s: dict) -> str:
+    def pc(x):
+        return "n/a" if x is None else f"{x:.1%}"
+
+    return "\n".join(
+        [
+            f"round 0 at max_tokens={s['max_tokens']}: {s['n']} generations",
+            f"truncated: {s['truncated']} ({s['truncation_rate']:.1%}) "
+            f"on {s['n_problems_with_truncation']} problems",
+            f"gate G3 (truncation < {TRUNCATION_GATE:.0%}): "
+            f"{'PASS' if s['gate_g3'] else 'FAIL'}",
+            f"accuracy: {pc(s['accuracy'])} overall, {pc(s['accuracy_finished'])} "
+            f"finished, {pc(s['accuracy_truncated'])} truncated",
+            f"completion tokens: median {s['tokens_p50']}, p90 {s['tokens_p90']}, "
+            f"max {s['tokens_max']}",
+        ]
+    )

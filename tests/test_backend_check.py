@@ -101,3 +101,29 @@ def test_review_without_a_prompt_log_says_so_instead_of_inventing_one(tmp_path):
     run_round0(ctx)
     text = format_review(ctx, select_review_sample(ctx, n=3, seed=0))
     assert "prompt not logged" in text
+
+
+def test_round0_summary_reports_truncation_and_accuracy_split(tmp_path):
+    from channel_audit.backend_check import round0_summary
+
+    ctx = build_ctx(tmp_path, n_problems=6, replicates=1, max_tokens=8)
+    run_round0(ctx)
+    grade_pending(ctx)
+    s = round0_summary(ctx)
+    assert s["n"] == 18
+    n_cut = sum(g.finish_reason == "length" for g in ctx.gens)
+    assert s["truncated"] == n_cut and s["truncation_rate"] == n_cut / 18
+    assert s["gate_g3"] is (s["truncation_rate"] < 0.05)
+    assert 0 <= s["accuracy"] <= 1
+    assert s["max_tokens"] == 8
+    assert s["tokens_p50"] <= s["tokens_p90"] <= 8
+
+
+def test_round0_summary_formats_a_readable_report(tmp_path):
+    from channel_audit.backend_check import format_round0_summary, round0_summary
+
+    ctx = build_ctx(tmp_path, n_problems=4, replicates=1)
+    run_round0(ctx)
+    grade_pending(ctx)
+    text = format_round0_summary(round0_summary(ctx))
+    assert "truncated" in text and "G3" in text and "accuracy" in text

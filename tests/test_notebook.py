@@ -109,3 +109,44 @@ def test_whole_notebook_runs_end_to_end_on_the_mock_backend(nb, tmp_path, monkey
     assert "match rate: 100.0%" in (run / "repro_report.txt").read_text()
     assert Path(ns["archive"]).exists()
     assert os.path.isdir(ns["REPO"])
+
+
+def test_round0_only_mode_with_a_token_override_runs_only_round0(
+    nb, tmp_path, monkeypatch, capsys
+):
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setenv("MCA_RUN_ROOT", str(tmp_path))
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    problems = fake_problems(6)
+    (tmp_path / "check_problems.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in problems), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "channel_audit.runner.backend_for_run",
+        lambda cfg, probs: MockBackend(MockWorld.from_problems(probs)),
+    )
+    ns: dict = {"__name__": "__main__"}
+    for i, src in enumerate(code_sources(nb)):
+        src = src.replace("SHOW_PROMPT = True", "SHOW_PROMPT = False")
+        src = src.replace("MAX_TOKENS = None", "MAX_TOKENS = 2048")
+        src = src.replace("ROUND0_ONLY = False", "ROUND0_ONLY = True")
+        exec(compile(src, f"<cell {i}>", "exec"), ns)
+
+    run = Path(ns["RUN"])
+    assert run.name.endswith("_mt2048")
+    assert ns["ctx"].cfg.max_tokens == 2048
+    assert {g.arm for g in ns["ctx"].gens} == {"round0"}
+    assert len(ns["ctx"].gens) == 6 * 3
+    assert not (run / "review_sample.md").exists()
+    assert not (run / "repro_report.txt").exists()
+    out = capsys.readouterr().out
+    assert "round 0 at max_tokens=2048" in out and "G3" in out
+
+
+def test_settings_cell_declares_the_new_options(nb):
+    ns: dict = {}
+    settings = next(
+        s for s in code_sources(nb) if s.lstrip().startswith("MODEL_CONFIG")
+    )
+    exec(settings, ns)
+    assert ns["MAX_TOKENS"] is None and ns["ROUND0_ONLY"] is False
