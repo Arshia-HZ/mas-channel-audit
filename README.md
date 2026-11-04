@@ -42,7 +42,10 @@ Backends: `vllm` (default, T4) and `hf` (P100, throughput checks only). Do not
 mix backends within one model. Model settings live in `configs/models/*.yaml`
 (revisions pinned; Qwen3 is forced to non-thinking mode).
 
-On a Kaggle T4 notebook with internet (one command per cell):
+**Easiest:** open [`notebooks/runner.ipynb`](notebooks/runner.ipynb) on a GPU runtime and
+*Run all*: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Arshia-HZ/mas-channel-audit/blob/main/notebooks/runner.ipynb).
+It works on Colab and Kaggle, loads the model once, is resumable, and saves a zip of the
+results. The same steps as plain commands (Kaggle T4 with internet, one command per cell):
 
 ```bash
 !git clone https://github.com/Arshia-HZ/mas-channel-audit.git && cd mas-channel-audit && pip install -e ".[vllm,data]"

@@ -19,7 +19,13 @@ import argparse
 
 from channel_audit.backends.mock import fake_problems
 from channel_audit.models import load_model_config
-from channel_audit.runner import RunConfig, backend_for_run, create_run, run_round0
+from channel_audit.runner import (
+    RunConfig,
+    backend_for_run,
+    config_for_model,
+    create_run,
+    run_round0,
+)
 from channel_audit.schema import Problem
 from channel_audit.store import JsonlStore
 
@@ -43,14 +49,8 @@ def main() -> None:
         if not args.problems:
             ap.error("a real model needs --problems")
         model = load_model_config(args.model_config)
-        cfg = RunConfig(
-            model_id=model.model_id,
-            backend=model.backend,
-            max_tokens=model.max_tokens,
-            context_limit=model.max_model_len,
-            replicates=args.replicates,
-            model=model,
-            log_prompts=args.log_prompts,
+        cfg = config_for_model(
+            model, replicates=args.replicates, log_prompts=args.log_prompts
         )
     else:
         cfg = RunConfig(

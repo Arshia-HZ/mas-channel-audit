@@ -64,6 +64,21 @@ class RunConfig(BaseModel):
     log_prompts: bool = False  # keep the chat messages of every generation
 
 
+def config_for_model(
+    model: ModelConfig, *, replicates: int, log_prompts: bool = False
+) -> RunConfig:
+    """The run settings that follow from a model config (one source of truth)."""
+    return RunConfig(
+        model_id=model.model_id,
+        backend=model.backend,
+        max_tokens=model.max_tokens,
+        context_limit=model.max_model_len,
+        replicates=replicates,
+        model=model,
+        log_prompts=log_prompts,
+    )
+
+
 class RunContext:
     """Stores and settings of one run directory.
 

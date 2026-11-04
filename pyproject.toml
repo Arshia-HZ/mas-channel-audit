@@ -41,3 +41,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Notebook cells keep inline comments next to the settings they explain.
+"*.ipynb" = ["E501"]

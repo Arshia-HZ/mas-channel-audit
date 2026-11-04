@@ -12,6 +12,7 @@ from channel_audit.models import ModelConfig
 from channel_audit.runner import (
     RunConfig,
     backend_for_run,
+    config_for_model,
     create_run,
     open_run,
     run_all,
@@ -33,6 +34,13 @@ MODEL = ModelConfig(
 def test_run_config_embeds_the_model_config_and_round_trips(tmp_path):
     cfg = RunConfig(model_id="org/model", backend="vllm", model=MODEL)
     assert RunConfig.model_validate_json(cfg.model_dump_json()) == cfg
+
+
+def test_config_for_model_takes_every_setting_from_the_model_config():
+    cfg = config_for_model(MODEL, replicates=3, log_prompts=True)
+    assert (cfg.model_id, cfg.backend) == ("org/model", "vllm")
+    assert (cfg.max_tokens, cfg.context_limit) == (64, 512)
+    assert cfg.model == MODEL and cfg.replicates == 3 and cfg.log_prompts
 
 
 def test_real_backends_need_a_model_config():
