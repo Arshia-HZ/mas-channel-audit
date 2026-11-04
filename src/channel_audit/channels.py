@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
-from channel_audit.extract import extract_boxed, extract_confidence
+from channel_audit.extract import extract_answer, extract_confidence
 from channel_audit.grade import answers_equivalent
 from channel_audit.schema import Generation
 
@@ -66,7 +66,7 @@ def agent_view(gen: Generation) -> AgentView:
     return AgentView(
         agent=gen.agent,
         text=gen.text,
-        answer=extract_boxed(gen.text),
+        answer=extract_answer(gen.text),
         confidence=extract_confidence(gen.text),
     )
 
