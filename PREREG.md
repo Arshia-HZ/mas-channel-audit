@@ -29,7 +29,7 @@ Items marked **[confirm]** are proposed wording and need the owner's sign-off.
 
 ## 3. Truncation and gate G3
 
-- A truncated output counts as incorrect unless a complete `boxed{}` answer appears
+- A truncated output counts as incorrect unless a complete `\boxed{}` answer appears
   before the cut-off; such an answer is the model's real response and is graded (owner
   decision; 2 of 41 truncated outputs at 1,024 tokens). Truncation itself is always
   reported separately, by arm.
@@ -48,14 +48,80 @@ Items marked **[confirm]** are proposed wording and need the owner's sign-off.
   at most 2.0%, no arm more than 2 points from `self_reflect`, and no context overflow
   once the window is 12,288.
 
-## 4. Screening (M4)
+## 4. Answer extraction
 
-- Each candidate is sampled 4 times per screen problem with the round-0 prompt.
-- Candidates: Qwen3-1.7B (non-thinking), Qwen2.5-Math-1.5B, Llama-3.2-3B-Instruct, and
-  Qwen2.5-1.5B-Instruct as the sanity model.
-- Gate G0: Qwen2.5-1.5B-Instruct within 5 points of its published MATH score of 55.2
-  (Qwen2.5 release post), and extraction failure under 5%.
-- Reported per model: accuracy by level, disagreement rate, truncation, extraction failure.
-- Primary model: **not yet chosen.** The plan picks Qwen2.5-Math-1.5B or Qwen3-1.7B, whichever
-  has more usable round-0 disagreement on the screen split. The choice and the numbers
-  behind it are written here after screening.
+- The answer is the last `\boxed{}` that is not a confidence statement. A box is a
+  confidence statement if it opens with the word "confidence", if "confidence" precedes it
+  on the same line, or if it holds just the stated `Confidence: N` number. Such boxes are
+  skipped from the end while an earlier box exists. A lone "Confidence ..." box is no
+  answer; a lone box holding only a number is kept. An unclosed last box means no answer.
+- There is no fallback to "the answer is", last-number guessing or any second extractor.
+  An output without a usable box is recorded as having no answer and counts as incorrect.
+- Why: the M4 screening showed that Qwen3-1.7B often boxes its `Confidence: N` line, and
+  the old last-box rule graded that as the answer. 420 of 1,200 screening samples (35%)
+  had their extracted answer change, none of them correct before and 303 correct after.
+  Qwen3-1.7B accuracy went from 44.3% to 69.6%. The same rule is applied to the answers
+  shown to peers in the revision arms.
+- Every result produced before this rule (including the M3 T4 check) is invalid for
+  accuracy and must be re-graded into a new directory (`scripts/22_regrade.py`).
+
+## 5. Screening (M4), completed 2026-11-05 except Llama
+
+- Protocol: 300 screen problems (all levels), 4 samples each, temperature 0.7, top-p 1.0,
+  `max_tokens` 2048, vLLM 0.33.0, fp16 on a Colab T4, round-0 prompt unless stated.
+  Graded with the extractor in section 4.
+
+| Model (round-0 prompt) | Accuracy | Levels 3-5 | Disagreement, levels 3-5 | Truncated | No box (finished) |
+| --- | --- | --- | --- | --- | --- |
+| Qwen3-1.7B, non-thinking | 69.6% | 63.5% | 47.0% | 6.0% | 0.9% |
+| Qwen2.5-Math-1.5B (base) | 24.8% | 23.7% | 68.9% | 28.7% | 18.1% |
+
+- Qwen2.5-Math-1.5B is a base model: its outputs often repeat the prompt, invent new
+  problems or emit stray tokens. The Instruct variant was not screened.
+- Llama-3.2-3B-Instruct: not screened. The Hugging Face repo is gated and Meta access was
+  requested on 2026-11-05. It is not needed to choose the primary model and is screened
+  when access is granted.
+
+### Gate G0 (sanity model Qwen2.5-1.5B-Instruct, published MATH 55.2)
+
+| Prompt and decoding | Accuracy | Difference | No box (finished) | Truncated |
+| --- | --- | --- | --- | --- |
+| Round-0 prompt (asks for a confidence), T=0.7 | 33.7% | -21.5 | 19.0% | 2.1% |
+| Plain prompt, T=0.7 | 49.7% | -5.5 | 0.2% | 1.9% |
+| Plain prompt, greedy | 52.0% | -3.2 | 0.3% | 4.0% |
+
+- G0 passes on the plain greedy run: within 5 points of the published score, extraction
+  failure under 5%. Greedy is the like-for-like setting, since published scores use greedy
+  decoding. The plain prompt is `prompts/v1/sanity.txt`: the question and "Please reason
+  step by step, and put your final answer within `\boxed{}`."
+- With the round-0 prompt this model fails G0: in 190 of its 228 unboxed outputs it ends on
+  the `Confidence:` line without stating a final answer, so asking for a confidence crowds
+  out the box. Qwen3-1.7B is not affected (0.9%). Weaker models may drop the box when asked
+  for a confidence; this matters for the `answer_conf` arm and for any other model.
+
+### Primary model: Qwen3-1.7B (non-thinking), approved by the owner 2026-11-05
+
+The plan picks Qwen2.5-Math-1.5B or Qwen3-1.7B, whichever has more usable round-0
+disagreement. A level 3 to 5 problem has **usable disagreement** when at least two of its
+four samples are valid (a boxed answer, not truncated) and at least one valid sample is
+right and one wrong. Over the 219 level 3 to 5 screen problems:
+
+| | Qwen3-1.7B | Qwen2.5-Math-1.5B |
+| --- | --- | --- |
+| Problems with a right and a wrong sample (any samples) | 38.8% | 57.1% |
+| Usable disagreement (valid samples only) | 32.9% | 33.3% |
+| Samples that are invalid | 9.1% | 45.9% |
+| Problems with all four samples valid | 79.9% | 11.4% |
+| Right and wrong with all four samples valid | 28.8% | 6.8% |
+
+The raw count favours Qwen2.5-Math only because almost half its samples are broken
+outputs. With invalid samples removed the two have the same usable disagreement, while
+Qwen3-1.7B has far more clean problems, higher accuracy and fewer broken outputs. Qwen3-1.7B
+is therefore the primary model.
+
+## 6. Open before this file is completed
+
+- Freeze `prompts/v1/` (needs the owner's approval after reading the review sample).
+- Screen Llama-3.2-3B-Instruct, or choose another second family, when access is settled.
+- Align the validator's G3 check with section 3.
+- M5: hypotheses and margins, gates G1 to G4 with thresholds, power calculation.
