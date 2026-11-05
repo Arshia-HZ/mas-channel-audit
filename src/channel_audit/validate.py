@@ -25,8 +25,51 @@ from channel_audit.runner import (
 )
 from channel_audit.seeds import gen_key
 
-TRUNCATION_GATE = 0.05  # G3: arm truncation must stay under 5%
+TRUNCATION_GATE = 0.05  # G3: each revision arm must truncate under 5%
 TRUNCATION_GAP_WARNING = 0.02  # report when an arm differs from self_reflect
+
+
+@dataclass(frozen=True)
+class G3Result:
+    """Gate G3 (PREREG section 3): zero overflow, each revision arm under 5%.
+
+    Round 0, the self-consistency pool and failure messages are reported but have
+    no threshold: every arm shares them, so their truncation cannot favour one.
+    """
+
+    ok: bool
+    overflow_total: int
+    truncation: dict[str, float]  # every kind of generation, for the report
+    overflow: dict[str, int]
+    failing_arms: list[str]  # revision arms at or above the truncation gate
+    flagged_arms: list[str]  # revision arms >2 points from self_reflect
+
+
+def g3_check(gens, limit: int) -> G3Result:
+    by_arm: dict[str, list] = defaultdict(list)
+    for g in gens:
+        by_arm[g.arm].append(g)
+    truncation = {
+        arm: sum(g.finish_reason == "length" for g in members) / len(members)
+        for arm, members in by_arm.items()
+    }
+    overflow = {
+        arm: sum(g.prompt_tokens + g.max_tokens > limit for g in members)
+        for arm, members in by_arm.items()
+    }
+    failing = [a for a in ARMS if truncation.get(a, 0.0) >= TRUNCATION_GATE]
+    base = truncation.get("self_reflect")
+    flagged = [
+        a
+        for a in ARMS
+        if base is not None
+        and a in truncation
+        and abs(truncation[a] - base) > TRUNCATION_GAP_WARNING
+    ]
+    total = sum(overflow.values())
+    return G3Result(
+        not failing and total == 0, total, truncation, overflow, failing, flagged
+    )
 
 
 @dataclass
@@ -40,6 +83,7 @@ class ValidationReport:
     matched_k: dict[str, float] = field(default_factory=dict)
     leakage_outcomes: dict[str, int] = field(default_factory=dict)
     g3_ok: bool = True
+    g3_failing_arms: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -123,26 +167,17 @@ def validate_run(ctx: RunContext) -> ValidationReport:
     if ungraded:
         report.errors.append(f"{ungraded} generations not graded")
 
-    limit = ctx.cfg.context_limit
-    for arm, members in by_arm.items():
-        report.truncation_rate[arm] = sum(
-            g.finish_reason == "length" for g in members
-        ) / len(members)
-        report.overflow_count[arm] = sum(
-            g.prompt_tokens + g.max_tokens > limit for g in members
+    g3 = g3_check(gens, ctx.cfg.context_limit)
+    report.truncation_rate = g3.truncation
+    report.overflow_count = g3.overflow
+    report.g3_ok = g3.ok
+    report.g3_failing_arms = g3.failing_arms
+    base = g3.truncation.get("self_reflect")
+    for arm in g3.flagged_arms:
+        report.warnings.append(
+            f"{arm}: truncation {g3.truncation[arm]:.1%} vs self_reflect {base:.1%}; "
+            "repeat the contrast excluding affected replicates"
         )
-    base = report.truncation_rate.get("self_reflect")
-    for arm in ARMS:
-        rate = report.truncation_rate.get(arm)
-        if base is not None and rate is not None:
-            if abs(rate - base) > TRUNCATION_GAP_WARNING:
-                report.warnings.append(
-                    f"{arm}: truncation {rate:.1%} vs self_reflect {base:.1%}; "
-                    "repeat the contrast excluding affected replicates"
-                )
-    report.g3_ok = sum(report.overflow_count.values()) == 0 and all(
-        report.truncation_rate.get(a, 0.0) < TRUNCATION_GATE for a in (*ARMS, "round0")
-    )
 
     report.leakage_outcomes = dict(Counter(r.outcome for r in ctx.leakage))
 

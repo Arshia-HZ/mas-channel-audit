@@ -8,7 +8,7 @@ Successor to [`causal-mas-distill`](https://github.com/Arshia-HZ/causal-mas-dist
 
 ## Status
 
-M0 to M3 are done (the T4 backend check ran; see `PREREG.md` section 2 and 3). M4 (problem freeze and model screening) is implemented and tested; the screening runs on a GPU have not been done yet.
+M0 to M3 are done (the T4 backend check ran; see `PREREG.md` section 2 and 3). M4 (problem freeze and model screening) is done. M5 (pilot and gates) tooling is implemented and tested; the pilot has not been run yet.
 See `AGENTS.md` for contributor and coding-agent rules.
 
 ## Development
@@ -85,3 +85,18 @@ Screen one model (4 samples per problem), on a GPU, then compare:
 python scripts/04_screen.py --model-config configs/models/qwen3-1.7b.yaml --problems data/problems --out runs/screen_qwen3-1.7b
 python scripts/04_screen_report.py --runs runs/screen_qwen3-1.7b runs/screen_qwen2.5-math-1.5b --json screen_summary.json
 ```
+
+## M5: pilot in shards, gates and power inputs
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Arshia-HZ/mas-channel-audit/blob/main/notebooks/pilot.ipynb)
+runs all arms on the 200 pilot problems (2 replicates) in resumable shards of about 50
+problems; each finished shard is validated and uploaded to the private dataset
+(`HF_TOKEN` secret with write access). As commands:
+
+```bash
+python scripts/05_pilot_shards.py --model-config configs/models/qwen3-1.7b.yaml --problems data/problems --out runs/pilot --upload-repo Arshia-HZ/mas-channel-audit-raw
+python scripts/05_failure_sample.py --root runs/pilot --out-dir g4      # 40 messages to label
+python scripts/05_gate_check.py --root runs/pilot --labels g4/labels.json --json pilot_report.json
+```
+`05_gate_check.py` prints gates G1 to G4, the arm table (accuracy, tokens, matched
+self-consistency) and the paired-difference SDs with the sample size they imply.

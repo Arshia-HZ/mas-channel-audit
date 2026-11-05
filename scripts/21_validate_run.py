@@ -26,7 +26,11 @@ def main() -> int:
         print(f"  ERROR {e}")
     for w in r.warnings:
         print(f"  WARN  {w}")
-    print(f"gate G3 (no overflow, truncation < 5%): {'pass' if r.g3_ok else 'FAIL'}")
+    print(
+        "gate G3 (no overflow; each revision arm under 5% truncation): "
+        f"{'pass' if r.g3_ok else 'FAIL'}"
+        + (f" - failing arms: {r.g3_failing_arms}" if r.g3_failing_arms else "")
+    )
     print(f"leakage outcomes: {r.leakage_outcomes}")
     t = throughput_summary(ctx.out_dir)
     print(

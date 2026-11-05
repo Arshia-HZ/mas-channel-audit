@@ -133,8 +133,78 @@ is therefore the primary model.
   the tests verify it, and every generation stores its template hash.
 - Templates: `round0`, `failure_msg` and the seven revision arms, plus `sanity` (G0 only).
 
-## 7. Open before this file is completed
+## 7. Pilot (M5)
 
+- Design: the 200 pilot problems, 2 replicates, the primary model (Qwen3-1.7B, temperature
+  0.7, 2048 tokens), all seven arms plus the self-consistency pool of 6. The pilot is never
+  pooled into confirmatory results; pilot problems are not in the confirm split.
+- Shards: `scripts/05_pilot_shards.py` runs shards of about 50 problems. Every (subject,
+  level) group stays whole inside one shard, so the placebo donor pool is the whole group in
+  the split and does not depend on the shard layout. On the pilot split the shards hold 50,
+  52, 49 and 49 problems, every group has 3 or more problems, and each finished shard is
+  validated and uploaded to the private dataset. Shard assignment uses only subject and
+  level.
+- Validation per shard: expected counts, no missing keys or parents, every generation graded,
+  every arm's budget computed. A shard that fails validation is not marked done.
+
+### Gates (evaluated on the pilot) **[confirm]** for the G1, G2 and G4 definitions
+
+| Gate | Definition | Pass | If it fails |
+| --- | --- | --- | --- |
+| G1 | Share of replicates whose three round-0 answers contain two or more distinct parsable answers | 15% or more | Restrict to levels 4 and 5, then retry on fresh pilot problems |
+| G2 | Share of replicates where at least one round-0 answer is correct but no answer in the round-0 plurality is | 5% or more | Same as G1; if still failing, test mixed teams first |
+| G3 | Section 3 | Zero overflow, each revision arm under 5% truncation | Fix limits before running |
+| G4 | 40 failure messages drawn uniformly at random with seed 0 (no use of correctness) and labelled useful, vague or wrong by the owner; wrong counts as not vague | At least half not vague | Keep the arm and plan the small-critic fallback |
+
+- If every arm falls within +/-1 point of matched self-consistency, that is not a failure:
+  move to the precise-null paper and give H5 priority.
+- A retry after G1 or G2 draws fresh problems from the confirm split and removes them from it.
+
+### Hypotheses and decision rules
+
+Analysis unit: the problem. Replicates are averaged within problem first; arms are compared
+with a problem-level paired bootstrap of 10,000 resamples. An arm's score is the plurality
+credit of its three final answers (1/m on an m-way tie containing the correct answer; an
+unparsable answer never votes). "Matched self-consistency" is the interpolated credit of the
+9 round-0 plus pool samples at the sample count whose token cost equals the arm's mean
+generated tokens per replicate. An arm's gain is its score minus matched self-consistency at
+its own budget.
+
+| # | Contrast | Decision rule |
+| --- | --- | --- |
+| 1 (H1) | `full_solution` gain over matched SC | Equivalent if the 90% CI lies within +/-2 points |
+| 2 (H2) | `answer_only` minus `full_solution` | Non-inferior if the lower 95% bound is above -1.5 points |
+| 3 (H3) | `placebo` minus `self_reflect`, correct-to-wrong rate | One-sided, Holm-adjusted |
+| 4 (H4) | `failure_cause` gain minus `full_solution` gain | Two-sided, Holm-adjusted |
+| 5 (H4) | `answer_conf` gain minus `full_solution` gain | Two-sided, Holm-adjusted |
+| 6 | Best low-bandwidth arm gain over matched SC | Two-sided, Holm-adjusted |
+
+- The best low-bandwidth arm in contrast 6 is chosen on the pilot only, among `answer_only`,
+  `answer_conf`, `dissent_only` and `failure_cause`, by the largest gain.
+- The correct-to-wrong rate counts agents correct in round 0 and wrong after revision,
+  divided by all agents.
+- H5 (mixed teams) is a separate family: the difference in contrast 4 or 5 between mixed and
+  same-model teams.
+- Reported on every run, by arm: truncation, context overflow, extraction failure and leakage
+  rejection. An arm more than 2 points from `self_reflect` in truncation is repeated without
+  the affected problems.
+
+### Sample size
+
+`n = (1.96 + 0.84)^2 s^2 / d^2`, with `s` the standard deviation of the pilot's problem-level
+paired differences for each contrast (`scripts/05_gate_check.py`), `d` = 3 points unless the
+pilot supports 2, capped at the 3,250 confirm problems. Phase 1's s = 0.2654 (614 problems
+for 3 points) was only a placeholder.
+
+### Pilot results
+
+Not yet run. The pilot numbers (gates, arm table, SDs and the chosen `d` and `n`) are written
+here after the pilot, before any confirmatory generation.
+
+## 8. Open before this file is completed
+
+- Run the pilot, then fill in the pilot results and the confirmatory sample size.
 - Screen Llama-3.2-3B-Instruct, or choose another second family, when access is settled.
-- Align the validator's G3 check with section 3.
-- M5: hypotheses and margins, gates G1 to G4 with thresholds, power calculation.
+- Confirm shards (M6) split the large (subject, level) groups, so placebo donors will need
+  to come from the whole confirm split; decide that before M6.
+- Commit and timestamp this file before any confirmatory generation.

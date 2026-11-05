@@ -15,6 +15,7 @@ import sys
 from functools import lru_cache
 
 from channel_audit.extract import extract_confidence, extract_final
+from channel_audit.mv_guard import GuardedCall
 from channel_audit.schema import Generation, Graded
 
 try:
@@ -56,10 +57,24 @@ def _normalize(s: str) -> str:
     return s
 
 
-def _mv_equal(a: str, b: str) -> bool:
+def _mv_equal_direct(a: str, b: str) -> bool:
     ga = _mv_parse(f"${a}$", parsing_timeout=_TIMEOUT)
     gb = _mv_parse(f"${b}$", parsing_timeout=_TIMEOUT)
     return bool(_mv_verify(ga, gb, timeout_seconds=_TIMEOUT))
+
+
+# Windows has no signal-based timeout, so a hard symbolic pair could hang a long
+# job. There the comparison runs in a worker that is killed after 10 s (the pair
+# then counts as not equivalent); POSIX keeps math_verify's own timeout.
+_GUARD = (
+    GuardedCall("channel_audit.grade:_mv_equal_direct", timeout=10.0)
+    if sys.platform == "win32"
+    else None
+)
+
+
+def _mv_equal(a: str, b: str) -> bool:
+    return _GUARD(a, b) if _GUARD is not None else _mv_equal_direct(a, b)
 
 
 @lru_cache(maxsize=65536)
@@ -96,7 +111,7 @@ def grade_generation(gen: Generation, gold: str) -> Graded:
 def _self_test() -> None:
     cases = [("0.5", r"\frac{1}{2}", True), ("3", "4", False)]
     for a, b, expected in cases:
-        if _mv_equal(a, b) is not expected:
+        if _mv_equal_direct(a, b) is not expected:
             raise RuntimeError(
                 f"math_verify self-test failed: equal({a!r}, {b!r}) != {expected}; "
                 "the verifier is not working in this environment"
