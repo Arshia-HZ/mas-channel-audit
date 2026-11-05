@@ -79,7 +79,7 @@ rebuilt and checked against its sha256.
 
 Screen one model (4 samples per problem), on a GPU, then compare:
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Arshia-HZ/mas-channel-audit/blob/main/notebooks/screen.ipynb)
-(run once per `MODEL_CONFIG`), or as commands:
+(run once per `MODEL_CONFIG`; the sanity model also runs with `SCREEN_PROMPTS = ["plain"]` and, for a like-for-like check against its published greedy score, `TEMPERATURE = 0`), or as commands:
 
 ```bash
 python scripts/04_screen.py --model-config configs/models/qwen3-1.7b.yaml --problems data/problems --out runs/screen_qwen3-1.7b

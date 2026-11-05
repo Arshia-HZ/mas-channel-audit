@@ -38,6 +38,7 @@ def build_ctx(
     max_tokens: int = 512,
     context_limit: int = 100_000,
     log_prompts: bool = False,
+    temperature: float = 0.7,
 ) -> RunContext:
     problems = fake_problems(n_problems)
     mock = MockBackend(
@@ -52,5 +53,6 @@ def build_ctx(
         max_tokens=max_tokens,
         context_limit=context_limit,
         log_prompts=log_prompts,
+        temperature=temperature,
     )
     return create_run(tmp_path / "run", cfg, problems, RecordingBackend(mock))

@@ -220,3 +220,67 @@ def test_the_comparison_names_the_prompt_and_checks_g0_on_the_plain_one(tmp_path
     text = format_comparison(reports)
     assert "plain" in text and "round0" in text
     assert text.count("G0") == 2
+
+
+# --- greedy decoding for the G0 sanity check ----------------------------------
+
+
+def test_samples_default_to_four_when_sampling_and_one_when_greedy():
+    from channel_audit.screening import resolve_samples
+
+    assert resolve_samples(0.7, None) == N_SAMPLES == 4
+    assert resolve_samples(0.0, None) == 1
+    assert resolve_samples(0.0, 1) == 1
+    assert resolve_samples(0.7, 4) == 4
+
+
+def test_greedy_with_several_samples_or_sampling_with_the_wrong_count_is_an_error():
+    from channel_audit.screening import resolve_samples
+
+    with pytest.raises(ValueError, match="greedy"):
+        resolve_samples(0.0, 4)
+    with pytest.raises(ValueError, match="samples"):
+        resolve_samples(0.7, 2)
+
+
+def test_config_for_model_can_set_the_temperature():
+    from channel_audit.models import ModelConfig
+    from channel_audit.runner import config_for_model
+
+    model = ModelConfig(
+        model_id="org/model",
+        backend="vllm",
+        dtype="float16",
+        revision="d" * 40,
+        max_tokens=64,
+        max_model_len=512,
+    )
+    assert config_for_model(model, replicates=1).temperature == 0.7
+    assert config_for_model(model, replicates=1, temperature=0.0).temperature == 0.0
+
+
+def test_greedy_screening_stores_one_sample_per_problem_at_temperature_zero(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=4, replicates=1, temperature=0.0)
+    run_screen(ctx, n_samples=1, prompt="plain")
+    gens = [g for g in ctx.gens if g.arm == PLAIN_ARM]
+    assert len(gens) == 4 and {g.temperature for g in gens} == {0.0}
+    assert {g.sample_idx for g in gens} == {0}
+
+
+def test_greedy_and_sampled_runs_have_different_identities(tmp_path):
+    a = build_ctx(tmp_path / "a", n_problems=2, replicates=1, temperature=0.0)
+    b = build_ctx(tmp_path / "b", n_problems=2, replicates=1, temperature=0.7)
+    run_screen(a, n_samples=1)
+    run_screen(b, n_samples=1)
+    assert {g.gen_key for g in a.gens}.isdisjoint({g.gen_key for g in b.gens})
+
+
+def test_the_report_and_table_say_when_decoding_was_greedy(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=4, replicates=1, temperature=0.0)
+    run_screen(ctx, n_samples=1, prompt="plain")
+    grade_pending(ctx)
+    r = screen_report(ctx, "plain")
+    assert r["temperature"] == 0.0 and r["n_samples"] == 4
+    r["model_id"] = "Qwen/Qwen2.5-1.5B-Instruct"
+    text = format_comparison([r])
+    assert "T=0" in text and "G0" in text

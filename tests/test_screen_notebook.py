@@ -136,3 +136,36 @@ def test_settings_default_to_the_study_prompt_only(nb):
     )
     exec(settings, ns)
     assert ns["SCREEN_PROMPTS"] == ["round0"]
+
+
+def test_greedy_setting_runs_one_sample_per_problem_in_its_own_folder(
+    nb, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setenv("MCA_RUN_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("MCA_SPLIT_DIR", str(tmp_path / "split"))
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setattr(data, "_hf_rows", fake_rows)
+    monkeypatch.setattr(
+        "channel_audit.runner.backend_for_run",
+        lambda cfg, probs: MockBackend(MockWorld.from_problems(probs)),
+    )
+    ns: dict = {"__name__": "__main__"}
+    for i, src in enumerate(code_sources(nb)):
+        src = src.replace("TEMPERATURE = 0.7", "TEMPERATURE = 0")
+        src = src.replace('SCREEN_PROMPTS = ["round0"]', 'SCREEN_PROMPTS = ["plain"]')
+        exec(compile(src, f"<cell {i}>", "exec"), ns)
+    run = Path(ns["RUN"])
+    assert run.name == "screen_qwen3-1.7b_vllm_t0"
+    assert ns["ctx"].cfg.temperature == 0.0 and len(ns["ctx"].gens) == 300
+    report = json.loads((run / "screen_report_plain.json").read_text(encoding="utf-8"))
+    assert report["temperature"] == 0.0 and report["n_samples"] == 300
+
+
+def test_settings_default_to_sampling_at_the_study_temperature(nb):
+    ns: dict = {}
+    settings = next(
+        s for s in code_sources(nb) if s.lstrip().startswith("MODEL_CONFIG")
+    )
+    exec(settings, ns)
+    assert ns["TEMPERATURE"] == 0.7

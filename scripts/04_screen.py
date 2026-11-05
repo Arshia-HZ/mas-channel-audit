@@ -5,6 +5,8 @@
 
 Uses the model config's decoding. ``--prompt round0`` is the study prompt;
 ``--prompt plain`` is the published-style prompt for the G0 sanity check.
+``--temperature 0`` runs greedy decoding (one sample per problem) for a like-for-like
+comparison with published scores; use a new ``--out`` for it.
 Resumable: re-running with the same arguments only generates what is missing.
 Then compare models with ``scripts/04_screen_report.py``.
 """
@@ -22,9 +24,9 @@ from channel_audit.runner import (
     grade_pending,
 )
 from channel_audit.screening import (
-    N_SAMPLES,
     PROMPT_ARMS,
     format_comparison,
+    resolve_samples,
     run_screen,
     screen_report,
 )
@@ -35,7 +37,8 @@ def main() -> None:
     ap.add_argument("--model-config", required=True)
     ap.add_argument("--problems", required=True, help="directory with the frozen split")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--samples", type=int, default=N_SAMPLES)
+    ap.add_argument("--samples", type=int, help="default: 4 sampled, 1 greedy")
+    ap.add_argument("--temperature", type=float, default=0.7)
     ap.add_argument(
         "--prompt", nargs="+", choices=list(PROMPT_ARMS), default=["round0"]
     )
@@ -43,10 +46,13 @@ def main() -> None:
 
     model = load_model_config(args.model_config)
     problems = load_frozen(args.problems, "screen")
-    cfg = config_for_model(model, replicates=1, log_prompts=True)
+    n_samples = resolve_samples(args.temperature, args.samples)
+    cfg = config_for_model(
+        model, replicates=1, log_prompts=True, temperature=args.temperature
+    )
     ctx = create_run(args.out, cfg, problems, backend_for_run(cfg, problems))
     for prompt in args.prompt:
-        run_screen(ctx, n_samples=args.samples, prompt=prompt)
+        run_screen(ctx, n_samples=n_samples, prompt=prompt)
     print(f"{grade_pending(ctx)} generations graded")
     print(format_comparison([screen_report(ctx, p) for p in args.prompt]))
 

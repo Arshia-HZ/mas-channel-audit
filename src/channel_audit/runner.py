@@ -65,12 +65,17 @@ class RunConfig(BaseModel):
 
 
 def config_for_model(
-    model: ModelConfig, *, replicates: int, log_prompts: bool = False
+    model: ModelConfig,
+    *,
+    replicates: int,
+    log_prompts: bool = False,
+    temperature: float = 0.7,
 ) -> RunConfig:
     """The run settings that follow from a model config (one source of truth)."""
     return RunConfig(
         model_id=model.model_id,
         backend=model.backend,
+        temperature=temperature,
         max_tokens=model.max_tokens,
         context_limit=model.max_model_len,
         replicates=replicates,

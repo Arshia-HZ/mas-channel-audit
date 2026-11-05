@@ -34,6 +34,17 @@ G0_MAX_EXTRACTION_FAILURE = 0.05
 PUBLISHED_MATH: dict[str, float] = {"Qwen/Qwen2.5-1.5B-Instruct": 55.2}
 
 
+def resolve_samples(temperature: float, requested: int | None) -> int:
+    """Samples per problem: 4 when sampling, 1 when greedy (all draws would match)."""
+    if temperature == 0:
+        if requested not in (None, 1):
+            raise ValueError("greedy decoding gives one answer; use 1 sample")
+        return 1
+    if requested not in (None, N_SAMPLES):
+        raise ValueError(f"the plan screens {N_SAMPLES} samples per problem")
+    return N_SAMPLES
+
+
 def _arm_for(prompt: str) -> str:
     if prompt not in PROMPT_ARMS:
         raise ValueError(
@@ -179,6 +190,15 @@ def _pc(x: float) -> str:
     return f"{x * 100:.1f}%"
 
 
+def _label(report: dict) -> str:
+    """Model and prompt, plus the temperature when it is not the study's 0.7."""
+    parts = [report.get("prompt", "round0")]
+    temperature = report.get("temperature", 0.7)
+    if temperature != 0.7:
+        parts.append(f"T={temperature:g}")
+    return f"{report['model_id']} ({', '.join(parts)})"
+
+
 def format_comparison(reports: list[dict]) -> str:
     """A text table comparing screened models, plus G0 where a reference exists."""
     lines = [
@@ -188,7 +208,7 @@ def format_comparison(reports: list[dict]) -> str:
     for r in reports:
         s = r["study_levels"]
         lines.append(
-            f"{r['model_id'] + ' (' + r.get('prompt', 'round0') + ')':<40}"
+            f"{_label(r):<40}"
             f"{r['max_tokens']:>5}{_pc(r['accuracy']):>7}"
             f"{_pc(s['accuracy']):>8}{_pc(r['disagreement_rate']):>9}"
             f"{_pc(s['disagreement_rate']):>8}{_pc(s['mixed_rate']):>9}"
@@ -201,8 +221,7 @@ def format_comparison(reports: list[dict]) -> str:
             f"L{lv}: {_pc(v['accuracy'])} (n={v['n_problems']})"
             for lv, v in r["by_level"].items()
         )
-        label = r["model_id"] + " (" + r.get("prompt", "round0") + ")"
-        lines.append(f"  {label:<38}{cells}")
+        lines.append(f"  {_label(r):<38}{cells}")
     for r in reports:
         published = PUBLISHED_MATH.get(r["model_id"])
         if published is None:
@@ -210,7 +229,7 @@ def format_comparison(reports: list[dict]) -> str:
         g = g0_check(r["accuracy"], r["extraction_failure_rate"], published)
         lines.append("")
         lines.append(
-            f"G0 {r['model_id']} ({r.get('prompt', 'round0')} prompt): "
+            f"G0 {_label(r)}: "
             f"{'PASS' if g['passed'] else 'FAIL'} "
             f"(accuracy {_pc(r['accuracy'])} vs published {published}% = "
             f"{g['difference_points']:+.1f} points, allowed +/-"

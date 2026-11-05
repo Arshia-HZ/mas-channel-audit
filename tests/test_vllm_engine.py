@@ -151,3 +151,10 @@ def test_from_config_explains_how_to_install_vllm(monkeypatch):
     monkeypatch.setitem(sys.modules, "vllm", None)
     with pytest.raises(ImportError, match=r"mas-channel-audit\[vllm\]"):
         VllmBackend.from_config(CFG)
+
+
+def test_greedy_requests_reach_the_engine_as_temperature_zero():
+    llm = FakeLLM()
+    make(llm).generate([req(temperature=0.0)])
+    _, params = llm.calls[0]
+    assert [p.temperature for p in params] == [0.0]
