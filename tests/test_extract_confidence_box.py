@@ -119,3 +119,47 @@ def test_a_lone_box_after_the_word_confidence_is_no_answer():
 def test_a_box_on_a_later_line_is_not_affected_by_an_earlier_confidence_word():
     text = "Confidence is high, so:" + NL + r"\boxed{12}"
     assert extract_answer(text) == "12"
+
+
+# --- the confidence VALUE when the model wraps or boxes it -------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (r"Confidence: } \boxed{100}", 100),
+        (r"\text{Confidence: } \boxed{90}", 90),
+        (r"Confidence: $ \boxed{75} $", 75),
+        (r"Confidence: $\boxed{60}$", 60),
+        (r"Confidence: **70**", 70),
+        (r"**Confidence**: 85", 85),
+        (r"Confidence: \(95\)", 95),
+        (r"\boxed{\text{Confidence: 88}}", 88),
+        (r"\boxed{\text{Confidence: } 77}", 77),
+        (r"Confidence level: \boxed{40}", 40),
+        (r"Confidence: **N = 100** (I believe this is correct)", 100),
+        (r'Confidence: N", where N is an integer', None),
+        (r"Confidence: high", None),
+        (r"Confidence: \boxed{x}", None),
+        (r"Confidence is 5 steps", None),
+    ],
+)
+def test_confidence_value_is_read_through_wrappers_and_boxes(text, expected):
+    from channel_audit.extract import extract_confidence
+
+    assert extract_confidence(text) == expected
+
+
+def test_the_last_confidence_still_wins():
+    from channel_audit.extract import extract_confidence
+
+    text = "Confidence: 30\n...\n" + r"\text{Confidence: } \boxed{95}"
+    assert extract_confidence(text) == 95
+
+
+def test_a_boxed_confidence_value_is_not_the_answer_and_is_not_lost():
+    from channel_audit.extract import extract_confidence
+
+    text = r"\boxed{12}" + NL + r"\text{Confidence: } \boxed{90}"
+    assert extract_answer(text) == "12"
+    assert extract_confidence(text) == 90

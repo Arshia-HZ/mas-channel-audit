@@ -16,7 +16,14 @@ import re
 from typing import NamedTuple
 
 _BOXED = re.compile(r"\\boxed\s*\{")
-_CONFIDENCE = re.compile(r"confidence\s*[:=]\s*(-?\d+(?:\.\d+)?)\s*%?", re.IGNORECASE)
+# "Confidence: N", also when the value is wrapped or boxed: ``Confidence: **70**``,
+# and the same inside a box or a \text group, or after "level" or "score".
+_CONFIDENCE = re.compile(
+    r"confidence(?:\s+(?:level|score))?\**\s*[:=]"
+    r"(?:[\s}$*]|N\s*=|\\boxed\s*\{|\\text\s*\{|\\\(|\\\[)*"
+    r"(-?\d+(?:\.\d+)?)\s*%?",
+    re.IGNORECASE,
+)
 # A box that opens with the word "confidence", optionally inside \text{...}.
 _CONFIDENCE_BOX = re.compile(
     r"^\W*(?:\\(?:text|textbf|mathbf|mathrm)\s*\{\s*)?\W*confidence", re.IGNORECASE

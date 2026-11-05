@@ -3,7 +3,7 @@
 Status: **draft**. It is completed at M5 and committed and timestamped before any
 confirmatory generation. Until then it only records decisions already taken, with the
 evidence behind them. Hypotheses, gates G1 to G4 and the power calculation are added at M5.
-Items marked **[confirm]** are proposed wording and need the owner's sign-off.
+Items marked **[confirm]** are proposed wording and need the owner's sign-off (none left).
 
 ## 1. Problems
 
@@ -36,7 +36,7 @@ Items marked **[confirm]** are proposed wording and need the owner's sign-off.
 - Sensitivity analysis: repeat every contrast after dropping the problems on which any
   round-0 agent truncated. Round 0 is shared by all arms, so this filter does not use any
   arm's outcome.
-- Gate G3 (evaluated at M5), proposed wording **[confirm]**:
+- Gate G3 (evaluated at M5), approved by the owner 2026-11-05:
   1. Context overflow must be zero (hard stop).
   2. Each of the seven revision arms must truncate under 5% (hard stop).
   3. Round 0 and the self-consistency pool are reported with no threshold. Every arm
@@ -64,6 +64,12 @@ Items marked **[confirm]** are proposed wording and need the owner's sign-off.
   shown to peers in the revision arms.
 - Every result produced before this rule (including the M3 T4 check) is invalid for
   accuracy and must be re-graded into a new directory (`scripts/22_regrade.py`).
+- The confidence value is the last `Confidence: N`, also when the model wraps or boxes the
+  number (`Confidence: **70**`, `\text{Confidence: } \boxed{90}`, `Confidence level: 75`,
+  `Confidence: **N = 100**`). Reading only the plain form missed half the values: for
+  Qwen3-1.7B the screening parsed 601 of 1,200; with the wrapped forms it parses 1,104 of
+  the 1,128 finished outputs (97.9%). The `answer_conf` arm shows `(confidence not given)`
+  only when no number can be read.
 
 ## 5. Screening (M4), completed 2026-11-05 except Llama
 
@@ -119,9 +125,16 @@ outputs. With invalid samples removed the two have the same usable disagreement,
 Qwen3-1.7B has far more clean problems, higher accuracy and fewer broken outputs. Qwen3-1.7B
 is therefore the primary model.
 
-## 6. Open before this file is completed
+## 6. Prompts
 
-- Freeze `prompts/v1/` (needs the owner's approval after reading the review sample).
+- `prompts/v1/` is frozen as of 2026-11-05, after the owner read the review sample of the
+  T4 check and approved it. The manifest `prompts/v1/MANIFEST.json` holds the sha256 of every
+  template (combined sha256 `545ebeded7e1ce0b749d03ad4dfd3cca35539176ed525c8c7508b5cb6aab7079`),
+  the tests verify it, and every generation stores its template hash.
+- Templates: `round0`, `failure_msg` and the seven revision arms, plus `sanity` (G0 only).
+
+## 7. Open before this file is completed
+
 - Screen Llama-3.2-3B-Instruct, or choose another second family, when access is settled.
 - Align the validator's G3 check with section 3.
 - M5: hypotheses and margins, gates G1 to G4 with thresholds, power calculation.

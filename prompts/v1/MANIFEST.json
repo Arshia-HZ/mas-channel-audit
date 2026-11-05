@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "files": {
+    "answer_conf.txt": "6509559bb4099e61f9d3770a939bfcb6d51ce681761ee6c72e86c1f5d04e0798",
+    "answer_only.txt": "50af8f6f58a16da283cbeb5003f02e0bfef54560419817b1877d4805ce6c49b8",
+    "dissent_only.txt": "71bad581bbce61fb655c4945867d9e10cf7eece9fd89212a425c52f21b03ed7f",
+    "failure_cause.txt": "4b063761febf75c0aa47f2074feac6283f08eea42861c3fb3e4336cfd45f3939",
+    "failure_msg.txt": "6af45aa6ec49d10a8e8f975e7b454391212e1503372673ae883f28c9a5f5df10",
+    "full_solution.txt": "0bdf47f0bea04417eb86aa44fb8e0efdc3d9e40f43162e7733cfdf377bb61516",
+    "round0.txt": "42ab28d01ae379edf347d9818800bcb1c7cd8ec6985c484a20e0850df2e96189",
+    "sanity.txt": "5f3b20ffc7ab6a460d5157688f94622849ef070c1415a3aa7fedfa60aca319fc",
+    "self_reflect.txt": "2d2e21fa5cf05ce5372e0b2a3de10509d9c628df9cad1f3c17e4fcba367d9297"
+  },
+  "combined_sha256": "545ebeded7e1ce0b749d03ad4dfd3cca35539176ed525c8c7508b5cb6aab7079"
+}
