@@ -38,6 +38,7 @@ TEMPLATE_FOR: dict[str, str] = {
     "round0": "round0",
     "sc_pool": "round0",
     "screen": "round0",
+    "screen_plain": "sanity",
     "failure_msg": "failure_msg",
     **{arm: arm for arm in ARMS},
     "placebo": "full_solution",
@@ -106,6 +107,11 @@ def _user(content: str) -> list[dict[str, str]]:
 
 def build_round0_prompt(question: str) -> list[dict[str, str]]:
     return _user(render(template_text("round0"), question=question))
+
+
+def build_plain_prompt(question: str) -> list[dict[str, str]]:
+    """The published-style prompt for the G0 sanity check (no confidence request)."""
+    return _user(render(template_text("screen_plain"), question=question))
 
 
 def build_failure_msg_prompt(question: str, solution: str) -> list[dict[str, str]]:

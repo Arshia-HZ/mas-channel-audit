@@ -147,3 +147,76 @@ def test_comparison_table_lists_every_model_and_g0_for_the_sanity_model(tmp_path
     text = format_comparison([a, b])
     assert "org/alpha" in text and "Qwen/Qwen2.5-1.5B-Instruct" in text
     assert "G0" in text and "disagree" in text
+
+
+# --- plain sanity prompt (published-style, no confidence request) ------------
+
+PLAIN_ARM = "screen_plain"
+
+
+def test_the_plain_template_is_a_question_and_the_box_instruction_only(tmp_path):
+    text = channels.template_text("screen_plain")
+    assert "<<question>>" in text and "\\boxed{}" in text
+    assert "onfidence" not in text
+    msgs = channels.build_plain_prompt("What is 1+1?")
+    assert len(msgs) == 1 and msgs[0]["role"] == "user"
+    assert "What is 1+1?" in msgs[0]["content"] and "<<" not in msgs[0]["content"]
+
+
+def test_the_plain_arm_has_its_own_template_hash():
+    assert channels.template_hash("screen_plain") != channels.template_hash("screen")
+
+
+def test_plain_screening_uses_a_separate_arm_and_the_plain_prompt(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=3, replicates=1)
+    run_screen(ctx, prompt="plain")
+    gens = [g for g in ctx.gens if g.arm == PLAIN_ARM]
+    assert len(gens) == 3 * 4
+    sent = {json.dumps(r.messages) for r in ctx.backend.by_arm(PLAIN_ARM)}
+    expected = {
+        json.dumps(channels.build_plain_prompt(p.question)) for p in ctx.problems
+    }
+    assert sent == expected
+    assert {g.prompt_hash for g in gens} == {channels.template_hash("screen_plain")}
+
+
+def test_both_prompts_can_share_one_run_directory(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=3, replicates=1)
+    run_screen(ctx)
+    run_screen(ctx, prompt="plain")
+    run_screen(ctx, prompt="plain")  # resumable
+    arms = [g.arm for g in ctx.gens]
+    assert arms.count(SCREEN_ARM) == 12 and arms.count(PLAIN_ARM) == 12
+
+
+def test_an_unknown_prompt_is_an_error(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=2, replicates=1)
+    with pytest.raises(ValueError, match="prompt"):
+        run_screen(ctx, prompt="fancy")
+
+
+def test_report_can_be_taken_per_prompt(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=4, replicates=1, base_p=1.0, effects={})
+    run_screen(ctx)
+    run_screen(ctx, prompt="plain")
+    grade_pending(ctx)
+    plain = screen_report(ctx, prompt="plain")
+    assert plain["prompt"] == "plain" and plain["n_samples"] == 16
+    assert screen_report(ctx)["prompt"] == "round0"
+    with pytest.raises(ValueError, match="screen"):
+        screen_report(
+            build_ctx(tmp_path / "other", n_problems=2, replicates=1), "plain"
+        )
+
+
+def test_the_comparison_names_the_prompt_and_checks_g0_on_the_plain_one(tmp_path):
+    ctx = build_ctx(tmp_path, n_problems=4, replicates=1, base_p=1.0, effects={})
+    run_screen(ctx)
+    run_screen(ctx, prompt="plain")
+    grade_pending(ctx)
+    reports = [screen_report(ctx), screen_report(ctx, prompt="plain")]
+    for r in reports:
+        r["model_id"] = "Qwen/Qwen2.5-1.5B-Instruct"
+    text = format_comparison(reports)
+    assert "plain" in text and "round0" in text
+    assert text.count("G0") == 2

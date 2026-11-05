@@ -102,3 +102,37 @@ def test_whole_notebook_runs_end_to_end_on_the_mock(nb, tmp_path, monkeypatch):
     report = json.loads((run / "screen_report.json").read_text(encoding="utf-8"))
     assert report["n_samples"] == 1200 and report["n_problems"] == 300
     assert Path(ns["archive"]).exists()
+
+
+def test_notebook_runs_both_prompts_and_writes_a_report_for_each(
+    nb, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setenv("MCA_RUN_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("MCA_SPLIT_DIR", str(tmp_path / "split"))
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setattr(data, "_hf_rows", fake_rows)
+    monkeypatch.setattr(
+        "channel_audit.runner.backend_for_run",
+        lambda cfg, probs: MockBackend(MockWorld.from_problems(probs)),
+    )
+    ns: dict = {"__name__": "__main__"}
+    for i, src in enumerate(code_sources(nb)):
+        src = src.replace(
+            'SCREEN_PROMPTS = ["round0"]', 'SCREEN_PROMPTS = ["round0", "plain"]'
+        )
+        exec(compile(src, f"<cell {i}>", "exec"), ns)
+    run = Path(ns["RUN"])
+    assert len(ns["ctx"].gens) == 300 * 4 * 2
+    plain = json.loads((run / "screen_report_plain.json").read_text(encoding="utf-8"))
+    assert plain["prompt"] == "plain" and plain["n_samples"] == 1200
+    assert (run / "screen_report.json").exists()
+
+
+def test_settings_default_to_the_study_prompt_only(nb):
+    ns: dict = {}
+    settings = next(
+        s for s in code_sources(nb) if s.lstrip().startswith("MODEL_CONFIG")
+    )
+    exec(settings, ns)
+    assert ns["SCREEN_PROMPTS"] == ["round0"]

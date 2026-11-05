@@ -14,20 +14,23 @@ import json
 from pathlib import Path
 
 from channel_audit.runner import grade_pending, open_run
-from channel_audit.screening import format_comparison, screen_report
+from channel_audit.screening import PROMPT_ARMS, format_comparison, screen_report
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--runs", nargs="+", required=True)
     ap.add_argument("--json", help="also write the reports to this file")
+    ap.add_argument(
+        "--prompt", nargs="+", choices=list(PROMPT_ARMS), default=["round0"]
+    )
     args = ap.parse_args()
 
     reports = []
     for run in args.runs:
         ctx = open_run(run)
         grade_pending(ctx)
-        reports.append(screen_report(ctx))
+        reports.extend(screen_report(ctx, p) for p in args.prompt)
     print(format_comparison(reports))
     if args.json:
         Path(args.json).write_text(

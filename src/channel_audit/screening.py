@@ -1,8 +1,11 @@
 """M4 screening: sample a model 4 times per problem and summarise what it does.
 
-Screening uses the round-0 prompt, the study decoding (temperature 0.7) and the
-model's ``max_tokens``. It never looks at an arm outcome. The report gives, for
-the screen split, accuracy by level, disagreement among the samples,
+Screening uses the study decoding (temperature 0.7) and the model's
+``max_tokens``. Two prompts exist: ``round0`` (the study prompt, which asks for
+a confidence) and ``plain`` (a published-style prompt with no confidence
+request, used for the G0 sanity check). They are separate arms, so both can
+live in one run directory. Screening never looks at an arm outcome. The report
+gives, for the screen split, accuracy by level, disagreement among the samples,
 truncation and extraction failure, and gate G0 for the sanity model.
 """
 
@@ -17,6 +20,8 @@ from channel_audit.runner import Planned, RunContext, _execute, identity_for
 from channel_audit.schema import Generation
 
 SCREEN_ARM = "screen"
+PLAIN_ARM = "screen_plain"
+PROMPT_ARMS = {"round0": SCREEN_ARM, "plain": PLAIN_ARM}
 N_SAMPLES = 4
 CHUNK_PROBLEMS = 50  # problems per backend call, so progress is saved as we go
 
@@ -29,17 +34,34 @@ G0_MAX_EXTRACTION_FAILURE = 0.05
 PUBLISHED_MATH: dict[str, float] = {"Qwen/Qwen2.5-1.5B-Instruct": 55.2}
 
 
+def _arm_for(prompt: str) -> str:
+    if prompt not in PROMPT_ARMS:
+        raise ValueError(
+            f"unknown prompt {prompt!r}; expected one of {list(PROMPT_ARMS)}"
+        )
+    return PROMPT_ARMS[prompt]
+
+
 def run_screen(
-    ctx: RunContext, n_samples: int = N_SAMPLES, chunk: int = CHUNK_PROBLEMS
+    ctx: RunContext,
+    n_samples: int = N_SAMPLES,
+    chunk: int = CHUNK_PROBLEMS,
+    prompt: str = "round0",
 ) -> list[Generation]:
     """Generate the missing screening samples, ``chunk`` problems at a time."""
+    arm = _arm_for(prompt)
+    build = (
+        channels.build_plain_prompt
+        if prompt == "plain"
+        else channels.build_round0_prompt
+    )
     out: list[Generation] = []
     for start in range(0, len(ctx.problems), chunk):
         planned = []
         for p in ctx.problems[start : start + chunk]:
-            messages = channels.build_round0_prompt(p.question)
+            messages = build(p.question)
             for k in range(n_samples):
-                ident = identity_for(ctx.cfg, p.problem_id, 0, 0, SCREEN_ARM, 0, k)
+                ident = identity_for(ctx.cfg, p.problem_id, 0, 0, arm, 0, k)
                 planned.append(Planned(ident, messages, []))
         out.extend(_execute(ctx, planned))
     return out
@@ -78,10 +100,11 @@ def _summary(stats: list[ProblemStats], correct: list[bool]) -> dict:
     }
 
 
-def screen_report(ctx: RunContext) -> dict:
-    gens = [g for g in ctx.gens if g.arm == SCREEN_ARM]
+def screen_report(ctx: RunContext, prompt: str = "round0") -> dict:
+    arm = _arm_for(prompt)
+    gens = [g for g in ctx.gens if g.arm == arm]
     if not gens:
-        raise ValueError("no screen generations stored; run the screening first")
+        raise ValueError(f"no {arm} generations stored; run the screening first")
     missing = [g.gen_key for g in gens if g.gen_key not in ctx.graded]
     if missing:
         raise ValueError(f"{len(missing)} screen generations are not graded yet")
@@ -110,6 +133,7 @@ def screen_report(ctx: RunContext) -> dict:
     n = len(gens)
     return {
         "model_id": ctx.cfg.model_id,
+        "prompt": prompt,
         "backend": gens[0].backend,
         "backend_version": gens[0].backend_version,
         "temperature": ctx.cfg.temperature,
@@ -158,13 +182,14 @@ def _pc(x: float) -> str:
 def format_comparison(reports: list[dict]) -> str:
     """A text table comparing screened models, plus G0 where a reference exists."""
     lines = [
-        f"{'model':<34}{'tok':>5}{'acc':>7}{'acc3-5':>8}{'disagree':>9}"
+        f"{'model (prompt)':<40}{'tok':>5}{'acc':>7}{'acc3-5':>8}{'disagree':>9}"
         f"{'dis3-5':>8}{'mixed3-5':>9}{'trunc':>7}{'extr.fail':>10}"
     ]
     for r in reports:
         s = r["study_levels"]
         lines.append(
-            f"{r['model_id']:<34}{r['max_tokens']:>5}{_pc(r['accuracy']):>7}"
+            f"{r['model_id'] + ' (' + r.get('prompt', 'round0') + ')':<40}"
+            f"{r['max_tokens']:>5}{_pc(r['accuracy']):>7}"
             f"{_pc(s['accuracy']):>8}{_pc(r['disagreement_rate']):>9}"
             f"{_pc(s['disagreement_rate']):>8}{_pc(s['mixed_rate']):>9}"
             f"{_pc(r['truncation_rate']):>7}{_pc(r['extraction_failure_rate']):>10}"
@@ -176,7 +201,8 @@ def format_comparison(reports: list[dict]) -> str:
             f"L{lv}: {_pc(v['accuracy'])} (n={v['n_problems']})"
             for lv, v in r["by_level"].items()
         )
-        lines.append(f"  {r['model_id']:<32}{cells}")
+        label = r["model_id"] + " (" + r.get("prompt", "round0") + ")"
+        lines.append(f"  {label:<38}{cells}")
     for r in reports:
         published = PUBLISHED_MATH.get(r["model_id"])
         if published is None:
@@ -184,7 +210,8 @@ def format_comparison(reports: list[dict]) -> str:
         g = g0_check(r["accuracy"], r["extraction_failure_rate"], published)
         lines.append("")
         lines.append(
-            f"G0 {r['model_id']}: {'PASS' if g['passed'] else 'FAIL'} "
+            f"G0 {r['model_id']} ({r.get('prompt', 'round0')} prompt): "
+            f"{'PASS' if g['passed'] else 'FAIL'} "
             f"(accuracy {_pc(r['accuracy'])} vs published {published}% = "
             f"{g['difference_points']:+.1f} points, allowed +/-"
             f"{g['tolerance_points']:.0f}; extraction failure "
