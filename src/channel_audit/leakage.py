@@ -39,14 +39,32 @@ class LeakageRecord(BaseModel):
     agent: int
     attempts: Literal[1, 2]
     outcome: Literal["clean", "regenerated_clean", "redacted"]
+    variant: str = "v1"  # which failure-message prompt wrote it (v1 or v2)
     final_gen_key: str  # the failure_msg generation the message came from
     n_stripped: int  # boxes and answer sentences removed from that generation
     leaked: list[str]  # answers still claimed after sanitising, before redaction
     sanitized_text: str  # exactly what the reader sees
 
 
-def record_key(problem_id: str, replicate: int, agent: int) -> str:
-    return f"{problem_id}|{replicate}|{agent}"
+def record_key(problem_id: str, replicate: int, agent: int, variant: str = "v1") -> str:
+    base = f"{problem_id}|{replicate}|{agent}"
+    return base if variant == "v1" else f"{variant}|{base}"
+
+
+_FIRST_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9*#$\(])")
+
+
+def first_sentence(text: str, max_chars: int = 300) -> str:
+    """The first sentence of ``text``, without markdown markers, at most ``max_chars``.
+
+    The v2 failure message must be one sentence; anything after the first
+    sentence (a re-solution, extra steps) is dropped.
+    """
+    text = re.sub(r"[#*]+", "", " ".join(text.split()))
+    text = _FIRST_SENTENCE_END.split(text.strip(), maxsplit=1)[0].strip()
+    if len(text) > max_chars:
+        text = text[:max_chars].rsplit(" ", 1)[0].rstrip()
+    return text
 
 
 def sanitize_message(text: str) -> tuple[str, int]:

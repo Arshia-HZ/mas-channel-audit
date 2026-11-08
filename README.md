@@ -100,3 +100,13 @@ python scripts/05_gate_check.py --root runs/pilot --labels g4/labels.json --json
 ```
 `05_gate_check.py` prints gates G1 to G4, the arm table (accuracy, tokens, matched
 self-consistency) and the paired-difference SDs with the sample size they imply.
+
+### Re-testing the stricter failure-message prompt (v2)
+
+After the pilot's gate G4 failed, `prompts/v2/failure_msg.txt` asks for one specific sentence.
+Once the owner has frozen it (`python scripts/03_freeze_prompts.py --dir prompts/v2`),
+[notebooks/retest.ipynb](https://colab.research.google.com/github/Arshia-HZ/mas-channel-audit/blob/main/notebooks/retest.ipynb)
+(or `scripts/05_retest_failure.py`) copies the finished pilot shards, generates only the v2
+failure messages and revisions, and uploads the copies under `pilot/<model>-v2`. Draw the
+fresh sample with `05_failure_sample.py --variant v2 --seed 1` and check it with
+`05_gate_check.py --variant v2 --seed 1 --labels ...`.

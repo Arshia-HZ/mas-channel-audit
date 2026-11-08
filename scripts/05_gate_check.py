@@ -16,7 +16,9 @@ import json
 from pathlib import Path
 
 from channel_audit.failure_review import (
+    format_stats,
     g4_check,
+    gold_audit,
     load_labels,
     sample_failure_messages,
 )
@@ -38,6 +40,9 @@ def main() -> None:
     ap.add_argument("--runs", nargs="+", help="shard run directories")
     ap.add_argument("--labels", help="completed labels file for G4")
     ap.add_argument("--seed", type=int, default=0, help="seed of the failure sample")
+    ap.add_argument(
+        "--variant", default="v1", choices=["v1", "v2"], help="failure-message prompt"
+    )
     ap.add_argument("--manifest", default="data/problems/split_manifest.json")
     ap.add_argument("--confirm-available", type=int)
     ap.add_argument("--json", help="also write the report to this file")
@@ -50,14 +55,24 @@ def main() -> None:
     available = args.confirm_available or confirm_available(Path(args.manifest))
     rep = pilot_report(ctxs, available)
 
-    g4 = None
+    g4 = audit = None
     if args.labels:
-        items = sample_failure_messages(ctxs, seed=args.seed)
+        items = sample_failure_messages(ctxs, seed=args.seed, variant=args.variant)
         g4 = g4_check(load_labels(args.labels, items))
+        audit = {"gold": gold_audit(items), "format": format_stats(items)}
     print(format_pilot_report(rep, g4))
+    if audit:
+        n = audit["format"]["n"]
+        print(
+            f"failure messages ({args.variant}): "
+            f"{audit['format']['single_sentence']}/{n} single sentence, "
+            f"{audit['format']['artifacts']} with an [answer removed] artifact, "
+            f"{audit['gold']['contains_gold']} containing the gold answer"
+        )
     if args.json:
         Path(args.json).write_text(
-            json.dumps({**rep, "G4": g4}, indent=1, sort_keys=True) + "\n",
+            json.dumps({**rep, "G4": g4, "G4_audit": audit}, indent=1, sort_keys=True)
+            + "\n",
             encoding="utf-8",
         )
 

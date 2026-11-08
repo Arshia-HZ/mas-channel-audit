@@ -60,3 +60,13 @@ def verify_manifest(prompts_dir: str | Path) -> dict:
     if problems:
         raise FrozenPromptsError("prompts differ from manifest: " + "; ".join(problems))
     return frozen
+
+
+def require_frozen(prompts_dir: str | Path) -> dict:
+    """The verified manifest, or an error saying the directory is not frozen."""
+    if not (Path(prompts_dir) / MANIFEST).exists():
+        raise FrozenPromptsError(
+            f"{prompts_dir} is not frozen: the owner approves the wording, then runs "
+            f"scripts/03_freeze_prompts.py --dir {prompts_dir}"
+        )
+    return verify_manifest(prompts_dir)

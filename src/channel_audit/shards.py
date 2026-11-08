@@ -20,13 +20,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from channel_audit.backends.base import Backend, GenRequest, GenResult
-from channel_audit.channels import ARMS
+from channel_audit.channels import ARMS, template_hash
 from channel_audit.runner import (
     RunConfig,
     _now,
     create_run,
     grade_pending,
+    open_run,
     run_all,
+    run_arm,
+    run_failure_messages,
 )
 from channel_audit.schema import Problem
 from channel_audit.validate import validate_run
@@ -220,6 +223,112 @@ def run_shards(
                 len(ctx.gens),
             )
         )
+    return results
+
+
+def run_variant_shards(
+    source_root: str | Path,
+    dest_root: str | Path,
+    cfg: RunConfig,
+    problems: Sequence[Problem],
+    backend: Backend | None,
+    *,
+    variant: str = "v2",
+    size: int = SHARD_SIZE,
+    keep_groups: bool = True,
+    uploader: Uploader | None = None,
+    restorer: Restorer | None = None,
+    source_prefix: str = "",
+    remote_prefix: str = "",
+    max_new_shards: int | None = None,
+    log: Callable[[str], None] = print,
+) -> list[ShardResult]:
+    """Add a failure-message variant to copies of finished shards.
+
+    Each finished source shard is copied byte for byte into ``dest_root``; the
+    variant's messages and revisions are then generated in the copy, which is
+    validated and uploaded like any shard. The source shards never change, so
+    both variants can be compared on the same round 0 and the same pool.
+    """
+    source_root, dest_root = Path(source_root), Path(dest_root)
+    arm = f"failure_cause_{variant}"
+    results = []
+    generated = 0
+    for index, _ in enumerate(make_shards(problems, size, keep_groups=keep_groups)):
+        name = shard_name(index)
+        src, dst = source_root / name, dest_root / name
+        remote = f"{remote_prefix}/{name}" if remote_prefix else name
+        done_path = dst / DONE_FILE
+        if done_path.exists():
+            done = json.loads(done_path.read_text(encoding="utf-8"))
+            status = "skipped"
+            if uploader is not None and not (dst / UPLOADED_FILE).exists():
+                _upload(dst, remote, uploader)
+                status = "uploaded_only"
+            log(f"{name}: {status}")
+            results.append(
+                ShardResult(
+                    name, status, True, done["g3_ok"],
+                    (dst / UPLOADED_FILE).exists(), done["n_generations"],
+                )
+            )  # fmt: skip
+            continue
+
+        if not (src / DONE_FILE).exists() and restorer is not None:
+            source_remote = f"{source_prefix}/{name}" if source_prefix else name
+            restorer(source_remote, src)
+        if not (src / DONE_FILE).exists():
+            raise FileNotFoundError(
+                f"{name}: no finished source shard in {source_root}"
+            )
+        if max_new_shards is not None and generated >= max_new_shards:
+            log(f"{name}: left for the next session")
+            continue
+
+        if not (dst / "run.json").exists():
+            shutil.copytree(
+                src,
+                dst,
+                ignore=shutil.ignore_patterns(DONE_FILE, UPLOADED_FILE),
+                dirs_exist_ok=True,
+            )
+        _check_same_config(dst, cfg)
+        log(f"{name}: failure messages {variant}")
+        ctx = open_run(dst, backend)
+        run_failure_messages(ctx, variant)
+        run_arm(ctx, arm)
+        grade_pending(ctx)
+        report = validate_run(ctx)
+        if report.errors:
+            raise ShardInvalidError(f"{name}: " + "; ".join(report.errors[:5]))
+        source_done = json.loads((src / DONE_FILE).read_text(encoding="utf-8"))
+        done = {
+            "shard": name,
+            "variant": variant,
+            "n_problems": len(ctx.problems),
+            "n_generations": len(ctx.gens),
+            "source_generations_sha256": source_done["generations_sha256"],
+            "generations_sha256": _sha256(dst / "generations.jsonl"),
+            f"failure_msg_{variant}_template_sha256": template_hash(
+                f"failure_msg_{variant}"
+            ),
+            "g3_ok": report.g3_ok,
+            "g3_failing_arms": report.g3_failing_arms,
+            "warnings": report.warnings,
+            "counts": report.counts,
+            "finished_at": _now(),
+        }
+        done_path.write_text(json.dumps(done, indent=1) + "\n", encoding="utf-8")
+        if uploader is not None:
+            _upload(dst, remote, uploader)
+        generated += 1
+        log(f"{name}: done, G3 {'pass' if report.g3_ok else 'FAIL'}")
+        results.append(
+            ShardResult(
+                name, "generated", True, report.g3_ok, uploader is not None,
+                len(ctx.gens),
+            )
+        )  # fmt: skip
     return results
 
 

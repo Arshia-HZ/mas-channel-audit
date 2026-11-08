@@ -71,7 +71,7 @@ Items marked **[confirm]** are proposed wording and need the owner's sign-off (n
   the 1,128 finished outputs (97.9%). The `answer_conf` arm shows `(confidence not given)`
   only when no number can be read.
 
-## 5. Screening (M4), completed 2026-11-05 except Llama
+## 5. Screening (M4), completed 2026-11-06
 
 - Protocol: 300 screen problems (all levels), 4 samples each, temperature 0.7, top-p 1.0,
   `max_tokens` 2048, vLLM 0.33.0, fp16 on a Colab T4, round-0 prompt unless stated.
@@ -81,12 +81,22 @@ Items marked **[confirm]** are proposed wording and need the owner's sign-off (n
 | --- | --- | --- | --- | --- | --- |
 | Qwen3-1.7B, non-thinking | 69.6% | 63.5% | 47.0% | 6.0% | 0.9% |
 | Qwen2.5-Math-1.5B (base) | 24.8% | 23.7% | 68.9% | 28.7% | 18.1% |
+| Llama-3.2-3B-Instruct | 10.5% | 7.5% | 22.4% | 3.7% | 70.4% |
 
 - Qwen2.5-Math-1.5B is a base model: its outputs often repeat the prompt, invent new
   problems or emit stray tokens. The Instruct variant was not screened.
-- Llama-3.2-3B-Instruct: not screened. The Hugging Face repo is gated and Meta access was
-  requested on 2026-11-05. It is not needed to choose the primary model and is screened
-  when access is granted.
+- Llama-3.2-3B-Instruct (screened 2026-11-06, T=0.7, round-0 prompt) is **not usable with
+  the frozen round-0 prompt**: 845 of 1,200 outputs have no `\boxed{}`, and 842 of those end
+  on the `Confidence:` line with the answer stated in plain text. Only 11 contain an
+  answer phrase. The model solves problems but drops the box when asked for a confidence,
+  as Qwen2.5-1.5B-Instruct partly does (19%) and Qwen3-1.7B does not (0.9%).
+  With the plain prompt and greedy decoding it reaches 43.7% (37.0% at levels 3 to 5),
+  5.7% without a box and 10.0% truncated.
+- The frozen prompts are not changed for it. Whether to screen another family (for example
+  Phi-3.5-mini-instruct or Granite-3.3-2B-Instruct), or to adopt a per-model prompt version,
+  is decided before M8, when the second family is needed. **[confirm]**
+- Finding for the paper: a confidence request costs format compliance in small instruct
+  models, which bears on the `answer_conf` arm outside Qwen3.
 
 ### Gate G0 (sanity model Qwen2.5-1.5B-Instruct, published MATH 55.2)
 
@@ -196,15 +206,87 @@ paired differences for each contrast (`scripts/05_gate_check.py`), `d` = 3 point
 pilot supports 2, capped at the 3,250 confirm problems. Phase 1's s = 0.2654 (614 problems
 for 3 points) was only a placeholder.
 
-### Pilot results
+### Pilot results (run 2026-11-07 to 2026-11-08, Qwen3-1.7B)
 
-Not yet run. The pilot numbers (gates, arm table, SDs and the chosen `d` and `n`) are written
-here after the pilot, before any confirmatory generation.
+200 problems x 2 replicates, four shards, all validated and uploaded. These numbers do not
+change any decision rule above; they are the evidence for the sample size and for what
+happens next.
+
+| Gate | Result | Need | Verdict |
+| --- | --- | --- | --- |
+| G1 round-0 disagreement | 33.0% of replicates (L3 20%, L4 31%, L5 48%) | 15% | PASS |
+| G2 recoverable headroom | 4.2% of replicates (17 of 400) | 5% | **FAIL** (narrow) |
+| G3 | zero overflow; every revision arm under 3% truncation | section 3 | PASS |
+| G4 failure messages | 15% not vague (0 useful, 6 wrong, 34 vague of 40) | 50% | **FAIL** |
+
+- Truncation: round 0 10.3%, pool 9.1%, revision arms 0.8% to 2.8%, failure messages 0.1%.
+- G4 labels: the 40 messages (seed 0) were labelled by Claude at the owner's request on
+  2026-11-08, using the definitions above; the owner's spot check is pending **[confirm]**.
+  Reading the sample: 26 messages say the work is correct, 24 contain an "[answer removed]"
+  artifact, 34 run past three sentences although the prompt asks for one, and 7 re-solve
+  the problem instead of reviewing it (two of those state the gold answer, which the
+  leakage filter missed because it only checks the three round-0 answers). Of 14 reviewed
+  solutions that were actually wrong, none got a message naming the real error. Even if the
+  eight borderline messages were relabelled not vague, the share would be 35%.
+
+| Arm | Accuracy | Mean tokens | Matched SC samples | SC accuracy | Gain over SC |
+| --- | --- | --- | --- | --- | --- |
+| self_reflect | 73.8% | 4,231 | 5.25 | 77.2% | -3.4% |
+| answer_only | 73.8% | 4,233 | 5.26 | 77.2% | -3.5% |
+| answer_conf | 73.9% | 4,226 | 5.25 | 77.2% | -3.3% |
+| dissent_only | 74.0% | 3,428 | 4.26 | 75.8% | -1.8% |
+| failure_cause | 75.3% | 5,724 | 7.11 | 78.9% | -3.6% |
+| full_solution | 72.7% | 4,176 | 5.19 | 77.1% | -4.5% |
+| placebo | 63.3% | 4,147 | 5.15 | 77.1% | -13.8% |
+
+Best low-bandwidth arm for contrast 6, chosen on the pilot: `dissent_only`.
+
+| Contrast | Mean | 95% CI | SD | Problems for 3 points | for 2 points |
+| --- | --- | --- | --- | --- | --- |
+| 1. full_solution gain over SC | -4.5% | [-7.1%, -1.8%] | 0.196 | 336 | 756 |
+| 2. answer_only minus full_solution | +1.1% | [-1.2%, +3.4%] | 0.164 | 236 | 530 |
+| 3. placebo minus self_reflect, correct-to-wrong | +10.2% | [+7.5%, +13.2%] | 0.204 | 362 | 814 |
+| 4. failure_cause minus full_solution (gains) | +0.9% | [-1.5%, +3.2%] | 0.169 | 250 | 563 |
+| 5. answer_conf minus full_solution (gains) | +1.2% | [-1.2%, +3.7%] | 0.177 | 273 | 614 |
+| 6. best low-bandwidth arm gain over SC | -1.8% | [-4.2%, +0.5%] | 0.172 | 258 | 579 |
+
+- At `d` = 3 points the largest requirement is 362 problems (contrast 3); at 2 points it is
+  814. Both are far below the 3,250 confirm problems. The sample size for the confirmatory
+  run is not fixed yet; it is set after the decisions in section 8.
+- In this pilot no arm beats matched self-consistency; every arm sits 1.8 to 4.5 points
+  below it, and `full_solution` is worse with a confidence interval that excludes zero.
+
+### Failure-message v2 re-test (planned 2026-11-08, after the G4 failure)
+
+- Why: the pilot's v1 failure messages were mostly vague, often re-solved the problem and in
+  two sampled cases stated the gold answer. The v2 prompt (`prompts/v2/failure_msg.txt`) asks
+  for the single step most likely to be wrong and one specific reason in a sentence, with no
+  solving and no final answer, and it never lets the reviewer say "no error" (a message must
+  stay a suspected error, never a correctness signal). The reply is cut to its first sentence
+  and then goes through the same leakage filter as v1.
+- v2 was written after seeing the pilot's v1 failures; it is therefore judged on a separate
+  draw, not on the 40 messages that motivated it.
+- Design: the finished pilot shards are copied; only the v2 messages and their revisions
+  (`failure_msg_v2`, `failure_cause_v2`) are generated, so round 0, the pool and every other
+  arm are shared. The v1 records are never touched. The reviewer is the same Qwen3-1.7B.
+- Success criteria, set before the run, on a fresh draw of 40 v2 messages (seed 1):
+  at least half not vague; at least 95% a single sentence with no "[answer removed]" artifact;
+  at most one message containing the gold answer (an offline audit, never a filter).
+- If it fails, the plan's small-critic fallback (a separate, stronger reviewer) is a new
+  decision; if that also fails, `failure_cause` is reported as a weak channel.
+- `prompts/v2` was frozen on 2026-11-08 after the owner read and approved the wording.
+  `failure_msg.txt` sha256 `f376375982756ce1905945d52fcad87d58f3bca62d8217cfa320284a7bf2aa93`,
+  combined sha256 `5903dd082b6dd630b1fca7b2cd057cd8d97c7e14e7a947a6b0d091f033d92096`
+  (`prompts/v2/MANIFEST.json`).
 
 ## 8. Open before this file is completed
 
-- Run the pilot, then fill in the pilot results and the confirmatory sample size.
-- Screen Llama-3.2-3B-Instruct, or choose another second family, when access is settled.
+- Decide what follows the G2 failure (restrict to levels 4 and 5 on fresh pilot problems,
+  per the plan; the G2-by-level table is now in the gate report) and fix the confirmatory
+  sample size and design accordingly.
+- Run the v2 re-test and record its result next to the pilot's.
+- Choose a second family that follows the round-0 format (Llama-3.2-3B-Instruct does not),
+  before M8.
 - Confirm shards (M6) split the large (subject, level) groups, so placebo donors will need
   to come from the whole confirm split; decide that before M6.
 - Commit and timestamp this file before any confirmatory generation.

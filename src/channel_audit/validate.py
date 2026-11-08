@@ -12,7 +12,13 @@ from channel_audit.budget import (
     matched_sample_count,
     sc_sample_cost,
 )
-from channel_audit.channels import ARMS, agent_view, disagrees
+from channel_audit.channels import (
+    ARMS,
+    NON_SOLUTION_ARMS,
+    VARIANT_ARMS,
+    agent_view,
+    disagrees,
+)
 from channel_audit.leakage import record_key
 from channel_audit.runner import (
     N_AGENTS,
@@ -57,11 +63,12 @@ def g3_check(gens, limit: int) -> G3Result:
         arm: sum(g.prompt_tokens + g.max_tokens > limit for g in members)
         for arm, members in by_arm.items()
     }
-    failing = [a for a in ARMS if truncation.get(a, 0.0) >= TRUNCATION_GATE]
+    revision_arms = (*ARMS, *VARIANT_ARMS)
+    failing = [a for a in revision_arms if truncation.get(a, 0.0) >= TRUNCATION_GATE]
     base = truncation.get("self_reflect")
     flagged = [
         a
-        for a in ARMS
+        for a in revision_arms
         if base is not None
         and a in truncation
         and abs(truncation[a] - base) > TRUNCATION_GAP_WARNING
@@ -90,7 +97,9 @@ class ValidationReport:
         return not self.errors
 
 
-def _expected_keys(ctx: RunContext, report: ValidationReport) -> dict[str, set[str]]:
+def _expected_keys(
+    ctx: RunContext, report: ValidationReport, with_v2: bool = False
+) -> dict[str, set[str]]:
     cfg, expected = ctx.cfg, defaultdict(set)
 
     def add(arm, problem_id, rep, agent, round_, sample_idx):
@@ -114,6 +123,13 @@ def _expected_keys(ctx: RunContext, report: ValidationReport) -> dict[str, set[s
                 views = [agent_view(g) for g in round0_gens(ctx, p.problem_id, rep)]
             except MissingRound0Error:
                 continue  # round0 itself is reported missing; arms cannot be derived
+            if with_v2:
+                for i in range(N_AGENTS):
+                    add("failure_msg_v2", p.problem_id, rep, i, REVISION_ROUND, 0)
+                    key = record_key(p.problem_id, rep, i, "v2")
+                    if key in ctx.leakage and ctx.leakage.get(key).attempts == 2:
+                        add("failure_msg_v2", p.problem_id, rep, i, REVISION_ROUND, 1)
+                    add("failure_cause_v2", p.problem_id, rep, i, REVISION_ROUND, 0)
             for arm in ARMS:
                 for i in range(N_AGENTS):
                     peers = [v for j, v in enumerate(views) if j != i]
@@ -131,7 +147,8 @@ def validate_run(ctx: RunContext) -> ValidationReport:
         by_arm[g.arm].append(g)
     report.counts = {arm: len(v) for arm, v in by_arm.items()}
 
-    expected = _expected_keys(ctx, report)
+    with_v2 = any(g.arm in ("failure_msg_v2", "failure_cause_v2") for g in gens)
+    expected = _expected_keys(ctx, report, with_v2)
     present = {arm: {g.gen_key for g in v} for arm, v in by_arm.items()}
     for arm, keys in expected.items():
         missing = len(keys - present.get(arm, set()))
@@ -162,7 +179,9 @@ def validate_run(ctx: RunContext) -> ValidationReport:
             )
 
     ungraded = sum(
-        1 for g in gens if g.arm != "failure_msg" and g.gen_key not in ctx.graded
+        1
+        for g in gens
+        if g.arm not in NON_SOLUTION_ARMS and g.gen_key not in ctx.graded
     )
     if ungraded:
         report.errors.append(f"{ungraded} generations not graded")
@@ -179,7 +198,12 @@ def validate_run(ctx: RunContext) -> ValidationReport:
             "repeat the contrast excluding affected replicates"
         )
 
-    report.leakage_outcomes = dict(Counter(r.outcome for r in ctx.leakage))
+    report.leakage_outcomes = dict(
+        Counter(
+            r.outcome if r.variant == "v1" else f"{r.variant}/{r.outcome}"
+            for r in ctx.leakage
+        )
+    )
 
     if not report.errors:
         per_sample, _ = sc_sample_cost(gens)

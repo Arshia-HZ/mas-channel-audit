@@ -21,11 +21,19 @@ from pydantic import BaseModel, ConfigDict, Field
 from channel_audit import channels
 from channel_audit.backends.base import Backend, GenRequest
 from channel_audit.backends.mock import MockBackend, MockWorld
-from channel_audit.channels import ARMS, AgentView, agent_view, disagrees
+from channel_audit.channels import (
+    ARMS,
+    NON_SOLUTION_ARMS,
+    VARIANT_ARMS,
+    AgentView,
+    agent_view,
+    disagrees,
+)
 from channel_audit.grade import grade_generation
 from channel_audit.leakage import (
     LeakageRecord,
     find_leaks,
+    first_sentence,
     record_key,
     redact,
     sanitize_message,
@@ -350,18 +358,24 @@ def run_sc_pool(ctx: RunContext) -> list[Generation]:
     return _execute(ctx, planned)
 
 
-def run_failure_messages(ctx: RunContext) -> None:
+def run_failure_messages(ctx: RunContext, variant: str = "v1") -> None:
     """Agent j's solution is reviewed in one sentence; the reader is agent j.
+
+    ``variant`` v2 uses the stricter prompt and keeps only the first sentence
+    of the reply; its records are stored apart from the v1 ones.
 
     Each message is sanitised and checked against all three round-0 answers.
     A surviving claim triggers one regeneration, then redaction. The outcome of
     every message is stored as a ``LeakageRecord``.
     """
+    if variant not in ("v1", "v2"):
+        raise ValueError(f"unknown failure-message variant {variant!r}")
+    arm_name = "failure_msg" if variant == "v1" else f"failure_msg_{variant}"
     items = []
     for p in ctx.problems:
         for rep in range(ctx.cfg.replicates):
             for j in range(N_AGENTS):
-                if record_key(p.problem_id, rep, j) not in ctx.leakage:
+                if record_key(p.problem_id, rep, j, variant) not in ctx.leakage:
                     items.append((p, rep, j))
     if not items:
         return
@@ -376,22 +390,25 @@ def run_failure_messages(ctx: RunContext) -> None:
         p, rep, j = item
         reviewed = r0_of(p, rep)[j]
         ident = identity_for(
-            ctx.cfg, p.problem_id, rep, j, "failure_msg", REVISION_ROUND, attempt
+            ctx.cfg, p.problem_id, rep, j, arm_name, REVISION_ROUND, attempt
         )
-        messages = channels.build_failure_msg_prompt(p.question, reviewed.text)
+        messages = channels.build_failure_msg_prompt(p.question, reviewed.text, variant)
         return Planned(ident, messages, [reviewed.gen_key])
 
     def check(item, gen: Generation):
         p, rep, _ = item
         answers = [agent_view(g).answer for g in r0_of(p, rep)]
         sanitized, n_stripped = sanitize_message(gen.text)
+        if variant != "v1":
+            sanitized = first_sentence(sanitized)
         return answers, sanitized, n_stripped, find_leaks(sanitized, answers)
 
     def store(item, attempts, outcome, gen, n_stripped, leaked, text) -> None:
         p, rep, j = item
         ctx.leakage.append(
             LeakageRecord(
-                record_key=record_key(p.problem_id, rep, j),
+                record_key=record_key(p.problem_id, rep, j, variant),
+                variant=variant,
                 problem_id=p.problem_id,
                 replicate=rep,
                 agent=j,
@@ -427,7 +444,7 @@ def run_failure_messages(ctx: RunContext) -> None:
 
 def run_arm(ctx: RunContext, arm: str) -> list[Generation]:
     """Branch one arm from the shared round 0: one revision per agent."""
-    if arm not in ARMS:
+    if arm not in ARMS and arm not in VARIANT_ARMS:
         raise ValueError(f"unknown arm: {arm}")
     planned = []
     for rep in range(ctx.cfg.replicates):
@@ -442,8 +459,9 @@ def run_arm(ctx: RunContext, arm: str) -> list[Generation]:
                 peers = [views[j] for j in peer_idx]
                 extra_parents: list[str] = []
                 kwargs: dict = {}
-                if arm == "failure_cause":
-                    key = record_key(p.problem_id, rep, i)
+                if arm in ("failure_cause", "failure_cause_v2"):
+                    variant = "v1" if arm == "failure_cause" else "v2"
+                    key = record_key(p.problem_id, rep, i, variant)
                     if key not in ctx.leakage:
                         raise MissingFailureMessageError(key)
                     record = ctx.leakage.get(key)
@@ -488,6 +506,8 @@ def run_all(ctx: RunContext, arms: Sequence[str] = ARMS) -> None:
     run_sc_pool(ctx)
     if "failure_cause" in arms:
         run_failure_messages(ctx)
+    if "failure_cause_v2" in arms:
+        run_failure_messages(ctx, "v2")
     for arm in arms:
         run_arm(ctx, arm)
 
@@ -524,7 +544,7 @@ def grade_pending(ctx: RunContext) -> int:
     gold = {p.problem_id: p.gold for p in ctx.problems}
     n = 0
     for g in list(ctx.gens):
-        if g.arm == "failure_msg" or g.gen_key in ctx.graded:
+        if g.arm in NON_SOLUTION_ARMS or g.gen_key in ctx.graded:
             continue
         ctx.graded.append(grade_generation(g, gold[g.problem_id]))
         n += 1

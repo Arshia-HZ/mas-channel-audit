@@ -30,6 +30,7 @@ def main() -> None:
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--n", type=int, default=N_SAMPLE)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--variant", default="v1", choices=["v1", "v2"])
     args = ap.parse_args()
     if bool(args.root) == bool(args.runs):
         ap.error("give exactly one of --root and --runs")
@@ -39,7 +40,10 @@ def main() -> None:
     else:
         dirs = [Path(r) for r in args.runs]
     items = sample_failure_messages(
-        [open_run(d) for d in dirs], n=args.n, seed=args.seed
+        [open_run(d) for d in dirs],
+        n=args.n,
+        seed=args.seed,
+        variant=args.variant,
     )
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)

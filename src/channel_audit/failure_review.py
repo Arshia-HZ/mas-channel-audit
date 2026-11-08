@@ -20,10 +20,12 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
+from channel_audit.leakage import find_leaks
 from channel_audit.runner import RunContext
 
 N_SAMPLE = 40
@@ -33,12 +35,18 @@ SOLUTION_CHARS = 2500  # how much of the reviewed solution the sheet shows
 
 
 def sample_failure_messages(
-    ctxs: Sequence[RunContext], n: int = N_SAMPLE, seed: int = 0
+    ctxs: Sequence[RunContext],
+    n: int = N_SAMPLE,
+    seed: int = 0,
+    variant: str = "v1",
 ) -> list[dict]:
+    """A seeded uniform sample of the messages written by one prompt variant."""
     records = []
     for ctx in ctxs:
         problems = {p.problem_id: p for p in ctx.problems}
         for rec in ctx.leakage:
+            if rec.variant != variant:
+                continue
             msg_gen = ctx.gens.get(rec.final_gen_key)
             reviewed = ctx.gens.get(msg_gen.parent_gen_keys[0])
             problem = problems[rec.problem_id]
@@ -53,6 +61,7 @@ def sample_failure_messages(
                     "reviewed_solution": reviewed.text,
                     "message": rec.sanitized_text,
                     "outcome": rec.outcome,
+                    "variant": rec.variant,
                 }
             )
     records.sort(key=lambda r: r["record_key"])
@@ -141,3 +150,34 @@ def g4_check(labels: Mapping[str, str]) -> dict:
         "threshold": G4_MIN_NOT_VAGUE,
         "passed": not_vague / n >= G4_MIN_NOT_VAGUE,
     }
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9*#$])")
+_NOISE = re.compile(r"[\s$]|\\left|\\right")
+
+
+def gold_audit(items: Sequence[dict]) -> dict:
+    """How many messages contain the gold answer (a report; never a filter).
+
+    A message counts when it claims the gold as a result (``= 7``, ``is 7``) or,
+    for golds of four or more characters, contains it verbatim.
+    """
+    hits = []
+    for item in items:
+        gold = _NOISE.sub("", item["gold"])
+        message = _NOISE.sub("", item["message"])
+        claimed = bool(find_leaks(item["message"], [item["gold"]]))
+        verbatim = len(gold) >= 4 and gold in message
+        if claimed or verbatim:
+            hits.append(item["record_key"])
+    return {"n": len(items), "contains_gold": len(hits), "record_keys": hits}
+
+
+def format_stats(items: Sequence[dict]) -> dict:
+    """Format compliance of a message sample."""
+    single = sum(
+        len(_SENTENCE_END.split(" ".join(i["message"].split()).strip())) <= 1
+        for i in items
+    )
+    artifacts = sum("[answer" in i["message"] for i in items)
+    return {"n": len(items), "single_sentence": single, "artifacts": artifacts}

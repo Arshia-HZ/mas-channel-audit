@@ -28,10 +28,11 @@ from channel_audit.analysis.stats import paired_bootstrap_ci
 from channel_audit.budget import (
     arm_costs,
     matched_sample_count,
+    sc_credit,
     sc_credit_interp,
     sc_sample_cost,
 )
-from channel_audit.channels import ARMS
+from channel_audit.channels import ARMS, VARIANT_ARMS
 from channel_audit.grade import is_correct
 from channel_audit.runner import N_AGENTS, RunContext, final_generations, round0_gens
 from channel_audit.validate import g3_check
@@ -115,16 +116,19 @@ def g1_disagreement(units: Sequence[Unit]) -> dict:
 
 def g2_headroom(units: Sequence[Unit]) -> dict:
     flags = []
+    by_level: dict[int, list[bool]] = defaultdict(list)
     for u in units:
         recoverable = False
         if any(u.r0_correct):
             winners = plurality(u.r0_answers).winners
             recoverable = not any(is_correct(w, u.gold) for w in winners)
         flags.append(recoverable)
+        by_level[u.level].append(recoverable)
     rate = sum(flags) / len(flags)
     return {
         "n": len(units),
         "rate": rate,
+        "by_level": {lv: sum(v) / len(v) for lv, v in sorted(by_level.items())},
         "threshold": G2_MIN,
         "passed": rate >= G2_MIN,
     }
@@ -172,7 +176,14 @@ def _contrast(diffs: dict[str, float], confirm_available: int) -> dict:
 def pilot_report(
     ctxs: Sequence[RunContext], confirm_available: int, arms: Sequence[str] = ARMS
 ) -> dict:
-    """Gates G1 to G3, the arm table and the paired-difference SDs of the pilot."""
+    """Gates G1 to G3, the arm table and the paired-difference SDs of the pilot.
+
+    The failure-message v2 arm is included automatically when its generations
+    are stored.
+    """
+    has_v2 = any(g.arm in VARIANT_ARMS for ctx in ctxs for g in ctx.gens)
+    if has_v2:
+        arms = (*arms, *VARIANT_ARMS)
     units = collect_units(ctxs, arms)
     gens = [g for ctx in ctxs for g in ctx.gens]
     n_pool = ctxs[0].cfg.n_pool
@@ -195,7 +206,8 @@ def pilot_report(
     }
     gain = {arm: {p: credit[arm][p] - sc[arm][p] for p in credit[arm]} for arm in arms}
     gain_mean = {arm: mean(gain[arm].values()) for arm in arms}
-    best = max(LOW_BANDWIDTH, key=lambda a: gain_mean[a])
+    candidates = [a for a in (*LOW_BANDWIDTH, *VARIANT_ARMS) if a in gain_mean]
+    best = max(candidates, key=lambda a: gain_mean[a])
     c2w = {
         arm: _by_problem(units, lambda u, a=arm: _correct_to_wrong(u, a))
         for arm in ("self_reflect", "placebo")
@@ -220,6 +232,19 @@ def pilot_report(
         },
         "best_low_bandwidth_vs_sc": gain[best],
     }
+    if has_v2:
+        diffs["failure_cause_v2_vs_full_solution"] = {
+            p: gain["failure_cause_v2"][p] - gain["full_solution"][p]
+            for p in gain["full_solution"]
+        }
+    sc_curve = {
+        kk: mean(
+            _by_problem(
+                units, lambda u, k_=kk: sc_credit(u.sc_answers, u.gold, k_)
+            ).values()
+        )
+        for kk in range(1, 3 + n_pool + 1)
+    }
     limit = ctxs[0].cfg.context_limit
     g3 = g3_check(gens, limit)
     return {
@@ -237,6 +262,7 @@ def pilot_report(
             for arm in arms
         },
         "best_low_bandwidth_arm": best,
+        "sc_curve": sc_curve,
         "contrasts": {
             name: _contrast(d, confirm_available) for name, d in diffs.items()
         },
@@ -271,6 +297,8 @@ def format_pilot_report(rep: dict, g4: dict | None) -> str:
         + ", ".join(f"L{lv} {v:.0%}" for lv, v in g1["by_level"].items()),
         f"G2 recoverable headroom: {g2['rate']:.1%} of replicates "
         f"(need {g2['threshold']:.0%}) -> {_verdict(g2['passed'])}",
+        "   by level: "
+        + ", ".join(f"L{lv} {v:.1%}" for lv, v in g2["by_level"].items()),
         f"G3 overflow {g3['overflow_total']}, failing arms {g3['failing_arms']}, "
         f"flagged arms {g3['flagged_arms']} -> {_verdict(g3['ok'])}",
     ]
@@ -291,6 +319,11 @@ def format_pilot_report(rep: dict, g4: dict | None) -> str:
             f"{arm:<15}{r['accuracy']:>7.1%}{r['tokens']:>8.0f}{r['matched_k']:>6.2f}"
             f"{r['sc_accuracy']:>8.1%}{r['gain']:>+8.1%}"
         )
+    curve = rep["sc_curve"]
+    lines.append(
+        "SC accuracy by samples: "
+        + ", ".join(f"k={k} {v:.1%}" for k, v in curve.items())
+    )
     lines += [
         f"best low-bandwidth arm (chosen on the pilot): "
         f"{rep['best_low_bandwidth_arm']}",

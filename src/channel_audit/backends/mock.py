@@ -100,7 +100,7 @@ class MockBackend:
     def _one(self, req: GenRequest) -> GenResult:
         rng = random.Random(req.seed)
         arm = req.meta["arm"]
-        if arm == "failure_msg":
+        if arm in ("failure_msg", "failure_msg_v2"):
             text = self._failure_message(req, rng)
         else:
             text = self._solution(req, rng, arm)

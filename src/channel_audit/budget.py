@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from itertools import combinations
 
 from channel_audit.aggregate import cluster_answers
-from channel_audit.channels import ARMS
+from channel_audit.channels import ARMS, VARIANT_ARMS
 from channel_audit.grade import is_correct
 from channel_audit.schema import Generation
 
@@ -50,6 +50,7 @@ def arm_costs(
     """
     round0: dict[tuple[str, int], list[Generation]] = defaultdict(list)
     failure: dict[tuple[str, int], list[Generation]] = defaultdict(list)
+    failure_v2: dict[tuple[str, int], list[Generation]] = defaultdict(list)
     by_arm: dict[str, dict[tuple[str, int], list[Generation]]] = defaultdict(
         lambda: defaultdict(list)
     )
@@ -59,10 +60,12 @@ def arm_costs(
             round0[key].append(g)
         elif g.arm == "failure_msg":
             failure[key].append(g)
-        elif g.arm in ARMS:
+        elif g.arm == "failure_msg_v2":
+            failure_v2[key].append(g)
+        elif g.arm in ARMS or g.arm in VARIANT_ARMS:
             by_arm[g.arm][key].append(g)
     if arms is None:
-        arms = [a for a in ARMS if a in by_arm]
+        arms = [a for a in (*ARMS, *VARIANT_ARMS) if a in by_arm]
     out = {}
     for arm in arms:
         totals = {False: [], True: []}
@@ -70,6 +73,8 @@ def arm_costs(
             members = list(r0) + list(by_arm[arm].get(key, []))
             if arm == "failure_cause":
                 members += failure.get(key, [])
+            elif arm == "failure_cause_v2":
+                members += failure_v2.get(key, [])
             for include_prompt in (False, True):
                 totals[include_prompt].append(_cost(members, include_prompt))
         n = len(totals[False])

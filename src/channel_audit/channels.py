@@ -33,6 +33,13 @@ ARMS: tuple[str, ...] = (
     "placebo",
 )
 
+# The failure-message variant (M5 re-test): a stricter prompt kept in its own
+# directory so the frozen v1 files never change. Its revision arm is a separate
+# arm name, so stored v1 records are never touched.
+VARIANT_ARMS: tuple[str, ...] = ("failure_cause_v2",)
+NON_SOLUTION_ARMS: tuple[str, ...] = ("failure_msg", "failure_msg_v2")
+TEMPLATE_VERSION_FOR: dict[str, str] = {"failure_msg_v2": "v2"}
+
 # Template file (without .txt) used for each kind of generation.
 TEMPLATE_FOR: dict[str, str] = {
     "round0": "round0",
@@ -40,6 +47,8 @@ TEMPLATE_FOR: dict[str, str] = {
     "screen": "round0",
     "screen_plain": "sanity",
     "failure_msg": "failure_msg",
+    "failure_msg_v2": "failure_msg",
+    "failure_cause_v2": "failure_cause",
     **{arm: arm for arm in ARMS},
     "placebo": "full_solution",
 }
@@ -73,7 +82,8 @@ def agent_view(gen: Generation) -> AgentView:
 
 
 def _template_bytes(name: str) -> bytes:
-    path = PROMPTS_DIR / PROMPT_VERSION / f"{TEMPLATE_FOR.get(name, name)}.txt"
+    version = TEMPLATE_VERSION_FOR.get(name, PROMPT_VERSION)
+    path = PROMPTS_DIR / version / f"{TEMPLATE_FOR.get(name, name)}.txt"
     return path.read_bytes().replace(b"\r\n", b"\n")
 
 
@@ -114,10 +124,13 @@ def build_plain_prompt(question: str) -> list[dict[str, str]]:
     return _user(render(template_text("screen_plain"), question=question))
 
 
-def build_failure_msg_prompt(question: str, solution: str) -> list[dict[str, str]]:
+def build_failure_msg_prompt(
+    question: str, solution: str, variant: str = "v1"
+) -> list[dict[str, str]]:
+    name = "failure_msg" if variant == "v1" else f"failure_msg_{variant}"
     return _user(
         render(
-            template_text("failure_msg"),
+            template_text(name),
             question=question,
             solution=strip_confidence(solution),
         )
@@ -179,23 +192,24 @@ def build_revision_prompt(
     ``donor_texts`` (solutions to a different problem) in the peers' slots
     through the very same template and renderer as ``full_solution``.
     """
-    if arm not in ARMS:
+    if arm not in ARMS and arm not in VARIANT_ARMS:
         raise ValueError(f"unknown arm: {arm}")
+    kind = "failure_cause" if arm == "failure_cause_v2" else arm
     values = {"question": question, "own_solution": own.text}
-    if arm == "answer_only":
+    if kind == "answer_only":
         values["peer_answers"] = _peer_answers(peers, with_confidence=False)
-    elif arm == "answer_conf":
+    elif kind == "answer_conf":
         values["peer_answers"] = _peer_answers(peers, with_confidence=True)
-    elif arm == "dissent_only":
+    elif kind == "dissent_only":
         if not disagrees(own, peers):
             return None
-    elif arm == "failure_cause":
+    elif kind == "failure_cause":
         if failure_message is None:
             raise ValueError("failure_cause needs failure_message")
         values["messages"] = failure_message
-    elif arm == "full_solution":
+    elif kind == "full_solution":
         values["peer_solutions"] = _peer_solutions(peers, [p.text for p in peers])
-    elif arm == "placebo":
+    elif kind == "placebo":
         if donor_texts is None or len(donor_texts) != len(peers):
             raise ValueError("placebo needs one donor text per peer")
         values["peer_solutions"] = _peer_solutions(peers, donor_texts)
