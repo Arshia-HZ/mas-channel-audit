@@ -49,6 +49,9 @@ def main() -> None:
     ap.add_argument("--size", type=int, default=SHARD_SIZE)
     ap.add_argument("--upload-repo", help="private HF dataset, e.g. user/name")
     ap.add_argument("--remote-prefix", help="default: <split>/<model>")
+    ap.add_argument(
+        "--max-new-shards", type=int, help="stop after this many new shards"
+    )
     args = ap.parse_args()
 
     model = load_model_config(args.model_config)
@@ -80,6 +83,7 @@ def main() -> None:
         uploader=uploader,
         restorer=restorer,
         remote_prefix=prefix,
+        max_new_shards=args.max_new_shards,
     )
     for r in results:
         print(

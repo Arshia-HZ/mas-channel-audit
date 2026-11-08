@@ -333,6 +333,19 @@ Best low-bandwidth arm for contrast 6, chosen on the pilot: `dissent_only`.
   extraction failure, leakage, by arm) is looked at. The pilot is never pooled.
 - Compute: about 3.5 times the pilot (3 times the problem-replicates, 18% more generations
   for the extra arm).
+- Hardware (decided 2026-11-08, before any confirmatory generation): the screening, the
+  pilot and the v2 re-test ran in fp16 on a Colab T4. The confirmatory run may instead run
+  on an NVIDIA RTX Pro 6000 Blackwell on molab, with the same model revision, vLLM version,
+  fp16, decoding and frozen prompts. Seeds are derived from the identity fields and do not
+  depend on hardware, but different GPU kernels give slightly different logits, so the
+  samples are not bit-identical to a T4 run. The switch is conditional on one check, made
+  on data that was already seen: the first pilot shard is generated on the new GPU
+  (uploaded under `pilot_check/`, never over `pilot/`) and compared with the T4 copy of
+  that shard. It passes if the truncation, overflow and extraction-failure rates of every
+  arm are within 2 points of the T4 shard and the round-0 accuracy is within 5 points
+  (about the noise of a 50-problem shard). If it fails, the confirmatory run stays on the
+  T4. Either way the whole confirmatory run uses one kind of hardware, and the run records
+  the GPU, driver and package versions in `HARDWARE.json`.
 
 ## 9. Open before this file is completed
 
