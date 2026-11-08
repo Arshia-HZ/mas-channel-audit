@@ -81,13 +81,21 @@ def _(REF, REPO_URL, mo, setup_button):
         sh("git", "pull", "-q", "--ff-only", cwd=REPO)  # on a branch: take the latest
 
     sys.path.insert(0, str(REPO / "src"))
-    from channel_audit import launcher
+    from channel_audit import launcher  # standard library only
 
-    sh(*launcher.install_command(str(REPO)))
+    # The job gets its own environment: installing vLLM must not replace the
+    # packages this notebook kernel runs on.
+    VENV = Path.home() / "mca-venv"
+    if not Path(launcher.venv_python(VENV)).exists():
+        sh(*launcher.setup_commands(str(REPO), str(VENV))[0])
+    sh(*launcher.setup_commands(str(REPO), str(VENV))[1])
+    PYTHON = launcher.venv_python(VENV)
+    # The split files are not in git: rebuild them and check them against the manifest.
+    sh(*launcher.freeze_command(str(REPO), PYTHON))
     sh("git", "log", "--oneline", "-1", cwd=REPO)
     subprocess.run(["nvidia-smi"])
     mo.md(f"Repository ready at `{REPO}`. Runs go to `{RUN_ROOT}`.")
-    return Path, REPO, RUN_ROOT, launcher, os
+    return PYTHON, Path, REPO, RUN_ROOT, launcher, os
 
 
 @app.cell
@@ -102,6 +110,7 @@ def _(mo):
 def _(
     HF_REPO,
     MODE,
+    PYTHON,
     Path,
     REPO,
     RUN_ROOT,
@@ -118,10 +127,12 @@ def _(
     if not token:
         raise RuntimeError("upload needs a Hugging Face token with write access")
 
-    launcher.record_hardware(job.out)
+    launcher.record_hardware(job.out, python=PYTHON)
     LOG = Path(job.out).parent / f"{MODE}.log"
     PID = Path(job.out).parent / f"{MODE}.pid"
-    pid = launcher.start(job.command(), LOG, PID, env={"HF_TOKEN": token})
+    pid = launcher.start(
+        job.command(python=PYTHON), LOG, PID, env={**job.env(), "HF_TOKEN": token}
+    )
     mo.md(f"Started `{MODE}` as process {pid}. Log: `{LOG}`")
     return
 

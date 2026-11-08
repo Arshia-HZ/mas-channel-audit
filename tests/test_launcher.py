@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import time
 
@@ -81,14 +83,59 @@ def test_an_unknown_split_is_refused():
         job(split="test").command()
 
 
-def test_the_install_command_prefers_uv_and_targets_this_interpreter(monkeypatch):
+def test_the_job_runs_in_its_own_environment_with_the_pinned_vllm(monkeypatch):
     monkeypatch.setattr(launcher.shutil, "which", lambda name: "/bin/uv")
-    cmd = launcher.install_command("/repo")
-    assert cmd[:3] == ["uv", "pip", "install"] and sys.executable in cmd
-    assert cmd[-1] == "/repo[vllm,data]"
+    make, install = launcher.setup_commands("/repo", "/venv")
+    assert make[:2] == ["uv", "venv"] and "/venv" in make and "3.12" in make
+    assert install[:3] == ["uv", "pip", "install"]
+    assert launcher.venv_python("/venv") in install
+    assert "vllm==0.33.0" in install and "/repo[data]" in install
+    assert not any(a.endswith("[vllm,data]") for a in install)
+
+
+def test_without_uv_it_falls_back_to_venv_and_pip(monkeypatch):
     monkeypatch.setattr(launcher.shutil, "which", lambda name: None)
-    cmd = launcher.install_command("/repo")
-    assert cmd[:4] == [sys.executable, "-m", "pip", "install"]
+    make, install = launcher.setup_commands("/repo", "/venv")
+    assert make == [sys.executable, "-m", "venv", "/venv"]
+    py = launcher.venv_python("/venv")
+    assert install[:4] == [py, "-m", "pip", "install"] and "vllm==0.33.0" in install
+
+
+def test_the_pinned_vllm_is_the_version_the_t4_runs_recorded():
+    assert launcher.VLLM_VERSION == "0.33.0"
+
+
+def test_the_job_command_can_use_another_interpreter():
+    cmd = job().command(python="/venv/bin/python")
+    assert cmd[0] == "/venv/bin/python" and cmd[1].endswith("05_pilot_shards.py")
+
+
+def test_the_problem_split_is_rebuilt_and_checked_before_the_first_run():
+    cmd = launcher.freeze_command("/repo", "/venv/bin/python")
+    assert cmd[0] == "/venv/bin/python" and cmd[1].endswith("04_freeze_problems.py")
+    assert cmd[cmd.index("--out") + 1] == "/repo/data/problems"
+
+
+def test_the_job_environment_turns_off_the_flashinfer_sampler():
+    assert launcher.JOB_ENV["VLLM_USE_FLASHINFER_SAMPLER"] == "0"
+    env = job().env()
+    assert env["VLLM_USE_FLASHINFER_SAMPLER"] == "0" and "HF_TOKEN" not in env
+
+
+def test_a_process_state_is_read_from_its_stat_line():
+    assert launcher.state_from_stat("3275 (python) Z 1 3275 3275 0") == "Z"
+    assert launcher.state_from_stat("12 (a (b) c) S 1 12 12 0") == "S"
+    assert launcher.state_from_stat("garbage") is None
+
+
+@pytest.mark.skipif(not os.path.isdir("/proc"), reason="needs /proc")
+def test_a_finished_job_nobody_waited_for_is_not_running(tmp_path, monkeypatch):
+    proc = subprocess.Popen([sys.executable, "-c", "pass"])
+    pidfile = tmp_path / "job.pid"
+    pidfile.write_text(str(proc.pid))
+    monkeypatch.setattr(launcher, "_children", {})  # an orphan: nobody polls it
+    assert wait_until(lambda: not launcher.is_running(pidfile))
+    proc.wait()
 
 
 def test_a_job_runs_in_the_background_and_logs(tmp_path):
@@ -147,3 +194,12 @@ def test_the_hardware_record_is_written_next_to_the_run(tmp_path, monkeypatch):
     saved = json.loads((tmp_path / "HARDWARE.json").read_text(encoding="utf-8"))
     assert saved == info
     assert info["gpu"] is None and "python" in info and "packages" in info
+
+
+def test_the_hardware_record_reads_versions_from_the_job_interpreter(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(launcher.shutil, "which", lambda name: None)
+    info = launcher.record_hardware(tmp_path, python=sys.executable)
+    assert info["packages"]["pydantic"] is not None
+    assert info["python"].startswith(f"{sys.version_info.major}.")

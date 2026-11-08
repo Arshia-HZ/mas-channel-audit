@@ -346,6 +346,13 @@ Best low-bandwidth arm for contrast 6, chosen on the pilot: `dissent_only`.
   (about the noise of a 50-problem shard). If it fails, the confirmatory run stays on the
   T4. Either way the whole confirmatory run uses one kind of hardware, and the run records
   the GPU, driver and package versions in `HARDWARE.json`.
+- Result of that check (2026-11-08, shard 00 of the pilot on the RTX Pro 6000 Blackwell,
+  vLLM 0.33.0 in its own environment with transformers 5.20.2): every arm's truncation and
+  extraction-failure rates were within 2 points of the T4 shard (largest difference 1.3
+  points, `failure_cause` truncation), overflow was 0, and round-0 accuracy was 72.3%
+  against 69.7%. The check passes. On the Blackwell run `VLLM_USE_FLASHINFER_SAMPLER=0`
+  is set, because vLLM's default FlashInfer sampler needs nvcc and ninja to compile and
+  the sandbox has neither; sampling then uses the PyTorch implementation.
 
 ## 9. Open before this file is completed
 

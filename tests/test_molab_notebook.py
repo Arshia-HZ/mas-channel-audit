@@ -63,7 +63,12 @@ def test_the_notebook_only_launches_it_never_computes_an_outcome(source):
 
 def test_the_notebook_runs_the_repository_at_a_chosen_ref(source):
     assert "REPO_URL" in source and "REF" in source
-    assert "git" in source and "install_command" in source
+    assert "git" in source and "setup_commands" in source
+
+
+def test_the_job_gets_its_own_environment_the_split_and_the_sampler_setting(source):
+    assert "venv_python" in source and "freeze_command" in source
+    assert "job.env()" in source and "python=PYTHON" in source
 
 
 def test_marimo_accepts_the_file(source):

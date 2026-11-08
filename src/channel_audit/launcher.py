@@ -10,17 +10,20 @@ from __future__ import annotations
 
 import json
 import os
-import platform
 import shutil
 import signal
 import subprocess
 import sys
 from collections import deque
 from dataclasses import dataclass
-from importlib import metadata
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "05_pilot_shards.py"
+# The version every screening, pilot and confirmatory generation was produced with.
+VLLM_VERSION = "0.33.0"
+# vLLM's default FlashInfer sampler compiles kernels with nvcc and ninja, which a
+# hosted sandbox lacks; the PyTorch sampler needs neither.
+JOB_ENV = {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
 PACKAGES = ("vllm", "torch", "transformers", "numpy", "math-verify", "pydantic")
 
 _children: dict[int, subprocess.Popen] = {}
@@ -42,11 +45,15 @@ class ShardJob:
     remote_prefix: str | None = None
     max_new_shards: int | None = None
 
-    def command(self) -> list[str]:
+    def env(self) -> dict[str, str]:
+        """Environment variables the job needs; the token is added by the caller."""
+        return dict(JOB_ENV)
+
+    def command(self, python: str | None = None) -> list[str]:
         if self.split not in ("pilot", "confirm"):
             raise ValueError(f"split must be 'pilot' or 'confirm', not {self.split!r}")
         cmd = [
-            sys.executable,
+            python or sys.executable,
             str(SCRIPT),
             "--model-config",
             self.model_config,
@@ -111,12 +118,45 @@ def job_for_mode(mode: str, repo: str, run_root: str, hf_repo: str) -> ShardJob:
     raise ValueError(f"mode must be 'confirm' or 'pilot_check', not {mode!r}")
 
 
-def install_command(repo: str) -> list[str]:
-    """Install the package with its GPU and data extras into this interpreter."""
-    target = f"{repo}[vllm,data]"
+def venv_python(venv: str | Path) -> str:
+    sub = "Scripts/python.exe" if os.name == "nt" else "bin/python"
+    return str(Path(venv) / sub)
+
+
+def setup_commands(repo: str, venv: str) -> list[list[str]]:
+    """Create an environment for the job and install the pinned stack into it.
+
+    The job gets its own environment so that installing vLLM never replaces the
+    packages the notebook kernel itself is running on.
+    """
+    py = venv_python(venv)
+    pins = [f"vllm=={VLLM_VERSION}", "-e", f"{repo}[data]"]
     if shutil.which("uv"):
-        return ["uv", "pip", "install", "--python", sys.executable, "-e", target]
-    return [sys.executable, "-m", "pip", "install", "-q", "-e", target]
+        return [
+            ["uv", "venv", "--python", "3.12", venv],
+            ["uv", "pip", "install", "--python", py, *pins],
+        ]
+    return [
+        [sys.executable, "-m", "venv", venv],
+        [py, "-m", "pip", "install", "-q", *pins],
+    ]
+
+
+def freeze_command(repo: str, python: str) -> list[str]:
+    """Rebuild the problem split from the pinned MATH revision and check the manifest.
+
+    The ``*.jsonl`` split files are not in git; this recreates them and refuses to
+    continue if they differ from ``split_manifest.json``.
+    """
+    script = str(Path(repo) / "scripts" / "04_freeze_problems.py")
+    return [python, script, "--out", f"{repo}/data/problems"]
+
+
+def state_from_stat(stat: str) -> str | None:
+    """The process state letter from a /proc/<pid>/stat line (Z is a zombie)."""
+    _, close, tail = stat.rpartition(")")
+    rest = tail.split()
+    return rest[0] if close and rest else None
 
 
 def _alive(pid: int) -> bool:
@@ -134,7 +174,11 @@ def _alive(pid: int) -> bool:
         return False
     except PermissionError:
         return True
-    return True
+    try:  # a finished job nobody waited for still answers kill(0)
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    except OSError:
+        return True
+    return state_from_stat(stat) not in ("Z", "X")
 
 
 def _read_pid(pid_file: str | Path) -> int | None:
@@ -193,8 +237,26 @@ def tail(log_file: str | Path, lines: int = 40) -> str:
         return ""
 
 
-def record_hardware(run_dir: str | Path) -> dict:
-    """Write HARDWARE.json (GPU, driver, package versions) beside the shards."""
+_VERSIONS = """
+import json, platform
+from importlib import metadata
+
+def version(package):
+    try:
+        return metadata.version(package)
+    except metadata.PackageNotFoundError:
+        return None
+
+packages = {package: version(package) for package in %r}
+print(json.dumps({"python": platform.python_version(), "packages": packages}))
+"""
+
+
+def record_hardware(run_dir: str | Path, python: str | None = None) -> dict:
+    """Write HARDWARE.json (GPU, driver, package versions) beside the shards.
+
+    Package versions are read from ``python``, the interpreter that runs the job.
+    """
     gpu = None
     if shutil.which("nvidia-smi"):
         proc = subprocess.run(
@@ -208,13 +270,13 @@ def record_hardware(run_dir: str | Path) -> dict:
         )
         if proc.returncode == 0 and proc.stdout.strip():
             gpu = proc.stdout.strip().splitlines()[0]
-    packages = {}
-    for pkg in PACKAGES:
-        try:
-            packages[pkg] = metadata.version(pkg)
-        except metadata.PackageNotFoundError:
-            packages[pkg] = None
-    info = {"gpu": gpu, "python": platform.python_version(), "packages": packages}
+    out = subprocess.run(
+        [python or sys.executable, "-c", _VERSIONS % (PACKAGES,)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    info = {"gpu": gpu, **json.loads(out.stdout)}
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "HARDWARE.json").write_text(
