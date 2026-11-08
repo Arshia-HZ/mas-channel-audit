@@ -1,0 +1,28 @@
+{
+  "analysis": {
+    "scripts/30_analyze.py": "d157a10c949fef81d0a6651175b21aa328617351e117ddb5076b5e7929134089",
+    "src/channel_audit/analysis/contrasts.py": "877c3df32f065b52cc753d31c0e6c6d666d0bbbaa45d0f303d9085982eb11840",
+    "src/channel_audit/analysis/integrity.py": "5afa29425d924c024cc6204073b2e9facd24f6d45c599660ddc9f7be9ddd9bdd",
+    "src/channel_audit/analysis/stats.py": "6a9e9ec3c1fb77af316cf2a2ce21205c237c2cedfe5fa5aa9b6a9357816c5826",
+    "src/channel_audit/analysis_freeze.py": "54b7d6f02ad53e63f3db193e99c5494e3d1e9b83ff1f238a3b826b5299fbbbad"
+  },
+  "pipeline": {
+    "src/channel_audit/aggregate.py": "63f197803154a3ff8066bb72477ac299c5881cdcbd181bc306600d6196fdb112",
+    "src/channel_audit/budget.py": "6455774ac712b45f5abb409f80191bd344d94e04b350b3197f5d7e23f6151120",
+    "src/channel_audit/channels.py": "9f3e4d7cf9755535800d696f153735f799e9b9d80a0daf7ddfe9270f8ac4f5d3",
+    "src/channel_audit/extract.py": "8e3413c47cb43491917ef5158738ec7629bc69247860522552945ab08bda97fb",
+    "src/channel_audit/gates.py": "b189944f002aa41f3464078dc306708d64ca05d12a96d9cb219614c1ccb176e1",
+    "src/channel_audit/grade.py": "89930e675c52df3ae274f68ad2cabe302080b03e45229379778ee5ff2cad35d6",
+    "src/channel_audit/leakage.py": "b80522b81f4faf5bc2fe35ae4a950cb01434925fe2f0be8fa7d827c98aec73dd",
+    "src/channel_audit/models.py": "1d178147d08c05fb84ebcb2331cf4b32193e328d3df7e2620a962c6508f76c39",
+    "src/channel_audit/mv_guard.py": "81e28a0a324dc4a99258ab863e09cf6e1d03449191e79f4f1e4634d26fd9f0d8",
+    "src/channel_audit/quality.py": "b2d6e7ef47ef1cbae69163377afa93dca37225ddc70ca1f090aa2dd063243776",
+    "src/channel_audit/runner.py": "190da3a5584335b1e1c6e62057ffebbbda5ec1cabab0c650c41009c3f088d063",
+    "src/channel_audit/schema.py": "1418cfd03b21ec9485a6b6a4fa253e1be95354d5716d1757247cbe143bebd6db",
+    "src/channel_audit/seeds.py": "29482aabf52fd7bb4a0d176ad34abc84986723d968b21fc1d99510a93f8a1521",
+    "src/channel_audit/shards.py": "ce38b4e363a8b045778d6c290f97fbe82f63b867ab84a9c85e156f4da0075ea8",
+    "src/channel_audit/store.py": "e32f9d512b3e37204f6904eec49c376b161c39c0624384f16bfcfb51d08c50b7",
+    "src/channel_audit/validate.py": "fe1d95ee8d8dad3f38b1f9ed5ebd20dec089db0554e277a5dc6ee4ddf3d43428"
+  },
+  "combined_sha256": "adb3be510348d5bce6964fa9314ba499e9b1ee2beed682ed32e614dc92b5b492"
+}

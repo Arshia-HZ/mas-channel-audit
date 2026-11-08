@@ -4,6 +4,8 @@ Status: **draft**. It is completed at M5 and committed and timestamped before an
 confirmatory generation. Until then it only records decisions already taken, with the
 evidence behind them. Hypotheses, gates G1 to G4 and the power calculation are added at M5.
 Items marked **[confirm]** are proposed wording and need the owner's sign-off (none left).
+Added on 2026-11-09: section 9 now shows the status of the open items, and section 10 records
+the confirmatory run and the frozen analysis. Sections 1 to 8 are unchanged.
 
 ## 1. Problems
 
@@ -354,13 +356,167 @@ Best low-bandwidth arm for contrast 6, chosen on the pilot: `dissent_only`.
   is set, because vLLM's default FlashInfer sampler needs nvcc and ninja to compile and
   the sandbox has neither; sampling then uses the PyTorch implementation.
 
-## 9. Open before this file is completed
+## 9. Open items (status on 2026-11-09)
 
-- Run the confirmatory shards (M6), then freeze the analysis code (M7) before analysing.
-- Choose a second family that follows the round-0 format before M8.
-- Commit and timestamp this file before the first confirmatory generation.
-- Choose a second family that follows the round-0 format (Llama-3.2-3B-Instruct does not),
-  before M8.
-- Confirm shards (M6) split the large (subject, level) groups, so placebo donors will need
-  to come from the whole confirm split; decide that before M6.
-- Commit and timestamp this file before any confirmatory generation.
+| Item | Status |
+| --- | --- |
+| Run the confirmatory shards (M6), then freeze the analysis code (M7) before analysing | **Done**: the shards finished on 2026-11-08 (section 10.1) and the analysis code is frozen as recorded in section 10.3. The analysis has not been run on them yet. |
+| Commit and timestamp this file before the first confirmatory generation | **Done**: sections 1 to 8 were committed as `4d7449d` at 2026-11-08 19:15:35 UTC; the first confirmatory generation was created at 19:17:18 UTC. |
+| Shards split the large (subject, level) groups, so placebo donors would have to come from the whole confirm split; decide before M6 | **Resolved in section 8**: the run uses the first 600 problems and keeps every group whole, so the donor pool is the group inside those 600. |
+| Choose a second family that follows the round-0 format (Llama-3.2-3B-Instruct does not), before M8 | **Open.** |
+
+## 10. Confirmatory run and analysis (added 2026-11-09)
+
+### 10.1 The confirmatory run (record; no outcome is involved)
+
+- Data: the first 600 problems of the frozen confirm split (levels 3, 4 and 5: 199, 193
+  and 208), 2 replicates, the seven preregistered arms plus `failure_cause_v2`, in 12
+  shards of 40 to 54 problems. Every shard was validated, marked done (its
+  `SHARD_DONE.json` holds the sha256 of its generations) and uploaded to the private
+  dataset `Arshia-HZ/mas-channel-audit-raw` under `confirm/qwen3-1.7b/shard_00` to
+  `shard_11`.
+- Hardware and software (`HARDWARE.json`): one NVIDIA RTX PRO 6000 Blackwell Server
+  Edition (driver 595.71.05), Qwen3-1.7B in fp16, vLLM 0.33.0, torch 2.14.0, transformers
+  5.20.2, Python 3.12.13, `VLLM_USE_FLASHINFER_SAMPLER=0` (section 8). The first generation
+  was created on 2026-11-08 at 19:17:18 UTC and the last at 20:57:21 UTC.
+- Run quality, pooled over the 12 shards. This is all that was looked at before the
+  freeze; no correctness is involved.
+
+| Generation | n | Truncated | Overflow | No box | No answer |
+| --- | --- | --- | --- | --- | --- |
+| round0 | 3,600 | 8.2% | 0 | 1.1% | 9.0% |
+| sc_pool | 7,200 | 7.6% | 0 | 1.1% | 8.4% |
+| self_reflect | 3,600 | 1.5% | 0 | 0.0% | 1.4% |
+| answer_only | 3,600 | 1.6% | 0 | 0.1% | 1.6% |
+| answer_conf | 3,600 | 1.8% | 0 | 0.1% | 1.8% |
+| dissent_only | 1,703 | 1.8% | 0 | 0.1% | 1.8% |
+| failure_cause | 3,600 | 1.3% | 0 | 0.1% | 1.2% |
+| full_solution | 3,600 | 0.6% | 0 | 0.0% | 0.6% |
+| placebo | 3,600 | 0.8% | 0 | 0.1% | 0.8% |
+| failure_cause_v2 | 3,600 | 1.8% | 0 | 0.1% | 1.7% |
+| failure_msg | 4,831 | 0.1% | 0 | - | - |
+| failure_msg_v2 | 3,770 | 0.6% | 0 | - | - |
+
+- Failure-message leakage (rejected means not clean on the first try): v1 had 3,600
+  messages, 2,369 clean, 492 regenerated and 739 redacted (rejection 34.2%); v2 had 3,600,
+  3,430 clean, 70 regenerated and 100 redacted (rejection 4.7%). `dissent_only` has fewer
+  generations because only an agent that saw a disagreement revises.
+- G3 is judged on the pooled run, as the pilot's was: zero overflow and every revision arm
+  under 5% truncation, which holds. Shard 04 failed G3 on its own (`answer_conf` and
+  `failure_cause_v2` at or above 5% truncation among its 53 problems, with `self_reflect`
+  at 4.1% against 1.3% for `full_solution` and `placebo`). The shard was kept. From the
+  rounded rates above no arm is more than 1 point from `self_reflect` over the pooled run,
+  so the flagged-arm run of section 10.2 is not expected to trigger; the analysis decides,
+  not this sentence.
+- Discipline (section 8): until the freeze in section 10.3 only the run quality above was
+  looked at. No accuracy, gain or contrast has been computed on the confirmatory shards,
+  and the pilot is never pooled with them.
+
+### 10.2 What the analysis computes (frozen)
+
+The code is `src/channel_audit/analysis/contrasts.py`, run by `scripts/30_analyze.py`. The
+owner decided on 2026-11-09 that p-values come from the bootstrap, that the Holm family is
+contrasts 3 to 6, and that the scope is the contrasts, the sensitivity runs below and
+the quality report, with decomposition and figures left for later and labelled exploratory.
+The rest of this section records how the code reads sections 7 and 8; the owner reviewed
+it on 2026-11-09 and found no problem.
+
+1. **Scores and budgets** are those of section 7. Replicates are averaged within problem.
+   An arm's score is the plurality credit of its three final answers. Its budget is its mean
+   generated tokens per replicate: round 0, every revision generation and, for the
+   failure-cause arms, every failure-message attempt including rejected ones. The matched
+   self-consistency sample count is that budget divided by the mean generated tokens of one
+   self-consistency sample (round 0 and pool); credit at a fractional count is interpolated
+   linearly between integer counts. A count outside 1 to 9 stops the main analysis.
+2. **Intervals**: 10,000 problem-level resamples drawn with numpy `default_rng(0)`; percentile
+   intervals (95%: the 2.5th and 97.5th percentiles; 90%: the 5th and 95th). Every contrast
+   of one analysis uses the same resamples.
+3. **p-values** come from the same resamples. One-sided (contrast 3, whose alternative is that
+   `placebo` has more correct-to-wrong changes): p = (1 + number of resampled means <= 0) /
+   10,001. Two-sided: twice the smaller of the two one-sided values (the other counts means
+   >= 0), at most 1. Holm adjustment runs over contrasts 3, 4, 5 and 6 together; an adjusted
+   p below 0.05 is a rejection.
+4. **Contrasts** (names as in the output):
+
+| # | Output name | Per-problem quantity | Rule |
+| --- | --- | --- | --- |
+| 1 | `full_solution_vs_sc` | gain of `full_solution` (score minus matched SC) | "equivalent" if the 90% interval lies within +/-2 points (the margins count as within), otherwise "equivalence not shown"; no p-value |
+| 2 | `answer_only_vs_full_solution` | credit of `answer_only` minus credit of `full_solution` | "non-inferior" if the lower end of the two-sided 95% interval is above -1.5 points, otherwise "non-inferiority not shown"; no p-value |
+| 3 | `placebo_vs_self_reflect_correct_to_wrong` | correct-to-wrong rate of `placebo` minus that of `self_reflect` | one-sided, Holm |
+| 4 | `failure_cause_vs_full_solution` | gain of `failure_cause` minus gain of `full_solution` | two-sided, Holm |
+| 5 | `answer_conf_vs_full_solution` | gain of `answer_conf` minus gain of `full_solution` | two-sided, Holm |
+| 6 | `best_low_bandwidth_vs_sc` | gain of `dissent_only` (fixed on the pilot) | two-sided, Holm |
+| - | `failure_cause_v2_vs_full_solution` | gain of `failure_cause_v2` minus gain of `full_solution` | secondary: two-sided, unadjusted, outside the Holm family, reported beside contrast 4 |
+
+   For contrast 2 the lower end of the two-sided 95% interval is the 2.5th percentile. That
+   is the stricter reading of "lower 95% bound"; the one-sided 5th percentile is not used.
+5. **Sensitivity and secondary analyses.** Each repeats every contrast with its own Holm
+   family and with budgets recomputed on its own problems:
+   - `level_3`, `level_4`, `level_5`: the problems of one level.
+   - `no_round0_truncation`: drops the problems on which any round-0 agent was cut off at
+     `max_tokens` (section 3).
+   - `no_flagged_arm_truncation`: run only if pooled truncation of some revision arm differs
+     from `self_reflect` by more than 2 points; drops the problems where `self_reflect` or a
+     flagged arm (and, for a failure-cause arm, its failure messages) was cut off.
+   - `prompt_tokens_in_budget`: the budget counts prompt tokens as well as generated tokens.
+     An arm whose budget exceeds the 9 drawn samples is "not estimable", and so are the
+     contrasts that need it; Holm then runs over the estimable ones.
+
+   An analysis left with no problem is reported as not run. The primary analysis is `main`;
+   all the others are secondary and none replaces it.
+6. **Also reported**: the arm table (score, tokens, matched sample count, matched SC score
+   and gain with its 95% interval), G1 and G2 overall and by level, G3 on the pooled run, run
+   quality by arm (truncation, overflow, extraction failure, leakage rejection) and the
+   self-consistency curve.
+7. **Checks before any number is computed**; the script stops if one fails. The analysis
+   files match the freeze and so do the pipeline files (section 10.3). `--expect-problems 600`
+   is given and met. Each shard matches the sha256 in its `SHARD_DONE.json`, validates
+   (counts, linkage, grading) and holds only stored grades equal to a fresh grading of the
+   same text. No problem appears in two shards.
+8. **Run once.** The script refuses an output directory that already holds results.
+   Whatever the outcome, `main` is the primary result. A later correction would be a dated,
+   labelled deviation published beside the original, never a replacement.
+9. **Exploratory.** Change types, the source-of-change decomposition, diversity,
+   recoverable-headroom recovery, conformity and all figures are descriptive, written after
+   the freeze, and never replace a primary table. Anything not listed in this section is
+   exploratory and is labelled so.
+
+Operating characteristics, checked on 2026-11-09 and not part of the frozen code. The error
+rates come from a one-off simulation of 2,000 analyses of 600 problems (1,000 resamples each)
+with differences shaped like the pilot's. The bootstrap p-values reject a true null in 4.4% to
+5.1% of analyses at the 0.05 level, and the Holm family errs in 5.4% (standard error 0.5
+points). The equivalence rule declares equivalence in 5.1% of analyses when the true gain
+sits on the +2 margin, and the non-inferiority rule in 3.3% on its -1.5 margin. The powers
+use the normal approximation with the pilot's paired SDs (0.16 to 0.20) and 600 problems. A
+two-sided test at 0.05 detects a true 3-point difference with 96% to 99.6% power (88% to 97%
+at the strictest Holm threshold, 0.0125). If the true gain of `full_solution` were exactly 0,
+contrast 1 would be declared equivalent in 61% of analyses at the pilot's SD of 0.196 (78% at
+0.17); if `answer_only` and `full_solution` truly tie, contrast 2 would be declared
+non-inferior in 58% to 61%, and in 96% to 97% if `answer_only` is 1.1 points better, as in
+the pilot. "Equivalence not shown" and "non-inferiority not shown" are therefore not
+evidence of a difference.
+
+### 10.3 Freeze record (2026-11-09)
+
+- `python scripts/29_freeze_analysis.py` wrote `configs/analysis_freeze.json`, once; it
+  refuses to overwrite it. The manifest has two groups, hashed with the same
+  line-ending-normalised sha256 as the prompts.
+- **Analysis group**, frozen for good and checked by the test suite:
+  `src/channel_audit/analysis/contrasts.py`, `analysis/integrity.py`, `analysis/stats.py`,
+  `src/channel_audit/analysis_freeze.py` and `scripts/30_analyze.py`. New analysis goes in
+  new files; these are not edited.
+- **Pipeline group**, pinned for the confirmatory run: `scripts/30_analyze.py` refuses to
+  run if one of these changed since the freeze and records their hashes in `RUN.json`.
+  Later work on the generation side (M8) may change them. Re-running the confirmatory
+  analysis later means checking out the freeze commit. The files are `aggregate`, `budget`,
+  `channels`, `extract`, `gates`, `grade`, `leakage`, `models`, `mv_guard`, `quality`,
+  `runner`, `schema`, `seeds`, `shards`, `store` and `validate`, all under
+  `src/channel_audit/`. `backends/base.py`, `backends/mock.py` and `placebo.py` are imported
+  but only produce generations, so they are not hashed; a test checks that every module the
+  script imports is in one of the three lists.
+- The code was tested on mock data only: planted effects are recovered
+  (`tests/test_contrasts.py`), and a separately written implementation that reads the raw
+  files and imports nothing from the package (`tests/independent_reference.py`) agrees with
+  it on every arm and contrast, including the level and truncation runs
+  (`tests/test_analysis_independent.py`). It has not been run on the confirmatory shards.
+- Combined sha256 of the manifest: `adb3be510348d5bce6964fa9314ba499e9b1ee2beed682ed32e614dc92b5b492`

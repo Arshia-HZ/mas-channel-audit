@@ -7,6 +7,18 @@ from collections.abc import Sequence
 import numpy as np
 
 
+def bootstrap_means(
+    diffs: Sequence[float] | np.ndarray, n_boot: int = 10_000, seed: int = 0
+) -> np.ndarray:
+    """Means of ``n_boot`` resamples, drawn as ``paired_bootstrap_ci`` draws them."""
+    d = np.asarray(diffs, dtype=float)
+    if d.size == 0:
+        raise ValueError("bootstrap_means needs at least one difference")
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, d.size, size=(n_boot, d.size))
+    return d[idx].mean(axis=1)
+
+
 def paired_bootstrap_ci(
     diffs: Sequence[float] | np.ndarray,
     n_boot: int = 10_000,
