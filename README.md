@@ -110,3 +110,12 @@ Once the owner has frozen it (`python scripts/03_freeze_prompts.py --dir prompts
 failure messages and revisions, and uploads the copies under `pilot/<model>-v2`. Draw the
 fresh sample with `05_failure_sample.py --variant v2 --seed 1` and check it with
 `05_gate_check.py --variant v2 --seed 1 --labels ...`.
+
+## M6: confirmatory run
+
+The design is in `PREREG.md` section 8: levels 3 to 5, the first 600 confirm problems, 2
+replicates, the seven arms plus `failure_cause_v2`.
+[notebooks/confirm.ipynb](https://colab.research.google.com/github/Arshia-HZ/mas-channel-audit/blob/main/notebooks/confirm.ipynb)
+(or `scripts/05_pilot_shards.py --split confirm --with-v2`) runs it in resumable shards and
+uploads each one. It prints run quality only and never an accuracy: the analysis code is
+frozen first (M7).

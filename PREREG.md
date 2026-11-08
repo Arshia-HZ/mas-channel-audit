@@ -221,7 +221,8 @@ happens next.
 
 - Truncation: round 0 10.3%, pool 9.1%, revision arms 0.8% to 2.8%, failure messages 0.1%.
 - G4 labels: the 40 messages (seed 0) were labelled by Claude at the owner's request on
-  2026-11-08, using the definitions above; the owner's spot check is pending **[confirm]**.
+  2026-11-08, using the definitions above; the owner reviewed the labels on 2026-11-08 and
+  found no problems.
   Reading the sample: 26 messages say the work is correct, 24 contain an "[answer removed]"
   artifact, 34 run past three sentences although the prompt asks for one, and 7 re-solve
   the problem instead of reviewing it (two of those state the gold answer, which the
@@ -279,12 +280,65 @@ Best low-bandwidth arm for contrast 6, chosen on the pilot: `dissent_only`.
   combined sha256 `5903dd082b6dd630b1fca7b2cd057cd8d97c7e14e7a947a6b0d091f033d92096`
   (`prompts/v2/MANIFEST.json`).
 
-## 8. Open before this file is completed
+#### Result of the v2 re-test (2026-11-08)
 
-- Decide what follows the G2 failure (restrict to levels 4 and 5 on fresh pilot problems,
-  per the plan; the G2-by-level table is now in the gate report) and fix the confirmatory
-  sample size and design accordingly.
-- Run the v2 re-test and record its result next to the pilot's.
+| Criterion | Target | Result |
+| --- | --- | --- |
+| Not vague (fresh 40, seed 1) | at least 50% | **27.5%** (1 useful, 10 wrong, 29 vague): FAIL |
+| Single sentence, no artifact | at least 95% | 40 of 40, 0 artifacts: PASS |
+| Messages containing the gold answer | at most 1 | 1: PASS (at the limit) |
+
+- Labelled by Claude at the owner's request; the owner reviewed the labels on 2026-11-08
+  and found no problems.
+- Format is fixed, content is not. 16 of 40 messages are a bare step name with no reason, and
+  the reasons that were given were mostly mistaken: 10 criticise a step that is correct.
+  Of the 14 reviewed solutions that were actually wrong, one message pointed at the real
+  error (a "large minus three small semicircles" assumption). The same-model reviewer
+  (Qwen3-1.7B) does not find errors, whatever the wording.
+- Arm effect: `failure_cause_v2` scores 74.5% against 75.3% for v1, with 4,942 mean tokens
+  (v1 5,724) and a gain over matched SC of -3.5% (v1 -3.6%). Against `full_solution` it is
+  +0.9% [-1.5%, +3.3%], the same as v1. Better-formed messages changed nothing measurable.
+- The small-critic fallback (a stronger separate reviewer) is the plan's next step for G4;
+  the owner decides whether it is worth testing.
+- Self-consistency accuracy by sample count on the pilot: k=1 66.9%, k=2 69.2%, k=3 73.5%,
+  k=4 75.4%, k=5 77.0%, k=6 77.9%, k=7 78.8%, k=8 79.5%, k=9 80.4%. Every revision arm sits
+  near the k=3 round-0 vote (73.5%): revision adds under one point over the vote.
+- G2 by level: L3 2.5%, L4 3.8%, L5 6.5%; levels 4 and 5 together 14 of 282 replicates
+  (4.96%), just under the 5% line.
+
+## 8. Confirmatory design (M6), decided by the owner on 2026-11-08
+
+- Population: levels 3 to 5, as preregistered. The pilot's G2 miss (4.2% against 5%) is
+  documented, not acted on: levels 4 and 5 alone would have been 4.96%, still at the line,
+  and a fresh pilot would cost another pilot's compute. G1, G2 and the arm results are
+  reported by level (3, 4, 5) as a preregistered secondary breakdown.
+- Problems: the first 600 problems of the frozen confirm split, in its frozen hash order
+  (199 at level 3, 193 at level 4, 208 at level 5; 21 subject-and-level groups of 16 to 52).
+  The choice depends on problem ids only. They are disjoint from the screen and pilot splits.
+- Replicates: 2, as in the pilot. Model, decoding, `max_tokens`, `max_model_len` and the
+  frozen prompts are those of the pilot.
+- Arms: the seven preregistered arms plus `failure_cause_v2`. Contrast 4 uses `failure_cause`
+  (v1, the preregistered prompt); the v2 contrast is reported beside it. Both are reported
+  whatever the outcome.
+- Shards: `confirm.ipynb` runs 12 shards of 40 to 54 problems with every group whole, so the
+  placebo donor pool is the group inside the chosen 600 and does not depend on the layout.
+  Each shard is validated before the next starts and uploaded to the private dataset.
+- Best low-bandwidth arm for contrast 6, chosen on the pilot before this run: `dissent_only`.
+- Sample size: the pilot's paired SDs are 0.16 to 0.20. At `d` = 3 points the largest
+  requirement is 362 problems, so 600 gives a margin; the 95% interval half-width is about
+  1.3 to 1.6 points. That is enough to detect a 3-point effect, to test the H2 margin of 1.5,
+  and to show that an arm below matched self-consistency is below it.
+- Discipline: no accuracy, gain or contrast is computed on confirmatory data until the
+  analysis code is frozen (M7). Between now and then only run quality (truncation, overflow,
+  extraction failure, leakage, by arm) is looked at. The pilot is never pooled.
+- Compute: about 3.5 times the pilot (3 times the problem-replicates, 18% more generations
+  for the extra arm).
+
+## 9. Open before this file is completed
+
+- Run the confirmatory shards (M6), then freeze the analysis code (M7) before analysing.
+- Choose a second family that follows the round-0 format before M8.
+- Commit and timestamp this file before the first confirmatory generation.
 - Choose a second family that follows the round-0 format (Llama-3.2-3B-Instruct does not),
   before M8.
 - Confirm shards (M6) split the large (subject, level) groups, so placebo donors will need

@@ -28,6 +28,7 @@ MATH_REVISION = "21a5633873b6a120296cce3e2df9d5550074f4a3"  # pinned commit
 SPLIT_SALT = "mas-channel-audit/split/v1"
 N_SCREEN = 300
 N_PILOT = 200
+N_CONFIRMATORY = 600  # the first 600 confirm problems in frozen hash order
 STUDY_LEVELS = (3, 4, 5)
 MANIFEST_NAME = "split_manifest.json"
 SPLITS = ("screen", "pilot", "confirm")
@@ -182,3 +183,17 @@ def load_frozen(directory: str | Path, name: str) -> list[Problem]:
         for line in blob.decode("utf-8").splitlines()
         if line.strip()
     ]
+
+
+def confirmatory_problems(
+    directory: str | Path, n: int = N_CONFIRMATORY
+) -> list[Problem]:
+    """The confirmatory run's problems: the first ``n`` of the frozen confirm split.
+
+    The confirm file is already in split-hash order, so taking its prefix depends
+    only on the problem ids, never on any model output.
+    """
+    problems = load_frozen(directory, "confirm")
+    if len(problems) < n:
+        raise ValueError(f"the confirm split has {len(problems)} problems, need {n}")
+    return problems[:n]
