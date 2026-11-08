@@ -132,6 +132,12 @@ def test_an_unfrozen_v2_stops_the_notebook_before_any_generation(
         "channel_audit.runner.backend_for_run",
         lambda cfg, probs: built.append(1) or MockBackend(world),
     )
+    # The repository's own prompts/v2 is frozen now, so point the check at an empty
+    # directory: the real require_frozen must refuse it.
+    real = prompt_freeze.require_frozen
+    empty = tmp_path / "unfrozen_prompts"
+    empty.mkdir()
+    monkeypatch.setattr(prompt_freeze, "require_frozen", lambda d: real(empty))
     ns: dict = {"__name__": "__main__"}
     with pytest.raises(prompt_freeze.FrozenPromptsError, match="not frozen"):
         for i, src in enumerate(code_sources(nb)):
