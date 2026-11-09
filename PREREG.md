@@ -360,7 +360,7 @@ Best low-bandwidth arm for contrast 6, chosen on the pilot: `dissent_only`.
 
 | Item | Status |
 | --- | --- |
-| Run the confirmatory shards (M6), then freeze the analysis code (M7) before analysing | **Done**: the shards finished on 2026-11-08 (section 10.1) and the analysis code is frozen as recorded in section 10.3. The analysis has not been run on them yet. |
+| Run the confirmatory shards (M6), then freeze the analysis code (M7) before analysing | **Done**: the shards finished on 2026-11-08 (section 10.1) and the analysis code is frozen as recorded in section 10.3. The analysis was run once on 2026-11-09 (section 10.4). |
 | Commit and timestamp this file before the first confirmatory generation | **Done**: sections 1 to 8 were committed as `4d7449d` at 2026-11-08 19:15:35 UTC; the first confirmatory generation was created at 19:17:18 UTC. |
 | Shards split the large (subject, level) groups, so placebo donors would have to come from the whole confirm split; decide before M6 | **Resolved in section 8**: the run uses the first 600 problems and keeps every group whole, so the donor pool is the group inside those 600. |
 | Choose a second family that follows the round-0 format (Llama-3.2-3B-Instruct does not), before M8 | **Open.** |
@@ -520,3 +520,31 @@ evidence of a difference.
   it on every arm and contrast, including the level and truncation runs
   (`tests/test_analysis_independent.py`). It has not been run on the confirmatory shards.
 - Combined sha256 of the manifest: `adb3be510348d5bce6964fa9314ba499e9b1ee2beed682ed32e614dc92b5b492`
+
+### 10.4 The confirmatory analysis run (2026-11-09)
+
+- Run once on the 12 confirmatory shards in a molab sandbox (created 2026-11-09T06:10:53+00:00), with
+  the code frozen in section 10.3: commit `3b00be0`, combined sha256
+  `adb3be510348d5bce6964fa9314ba499e9b1ee2beed682ed32e614dc92b5b492`, checked by the script before it computed anything.
+  Command: `scripts/30_analyze.py --root <shards> --out-dir <new directory> --expect-problems 600`
+  with the default 10,000 resamples and seed 0.
+- Environment: Python 3.12.13, numpy 2.5.4, math-verify 0.9.0, pydantic
+  2.14.3, latex2sympy2_extended 1.11.0, Linux. The shards were downloaded from
+  `Arshia-HZ/mas-channel-audit-raw` (`confirm/qwen3-1.7b/`). All the script's checks passed: each
+  shard matches its `SHARD_DONE.json` hash and validates, every stored grade equals a fresh
+  grading, 600 distinct problems.
+- Reports, in `results/confirm_qwen3-1.7b_analysis/` (the only files of `results/` kept in git;
+  force-added because `results/` is ignored). sha256 with LF line endings:
+  `analysis.md` `e082d42ffa822f2b6665666950c000df009481234a59735ef40ad60340674ab6`,
+  `analysis.json` `9ebaf31dda2e7807cc6aeb03d8be1e58b9d94f47a31d9bb4a4ded5456e5a6d70`,
+  `RUN.json` `31d39708db3cd70b60e5eeae7442a923c5871d9d80febdc86f012e9242bff549`.
+- No deviation from sections 7, 8 and 10.2, and no second run. `RUN.json` shows `hardware: null`
+  because the generation sandbox's `HARDWARE.json` was not uploaded with the shards; the hardware is
+  recorded in section 10.1.
+- Primary analysis (`main`), decisions as the rules of section 10.2 give them: contrast 1
+  "equivalence not shown", contrast 2 "non-inferiority not shown", contrast 3 rejected, contrasts 4,
+  5 and 6 not rejected after Holm. G1 passed (38.6%), G2 was 2.6% (below the 5% line, as in the
+  pilot; documented, not acted on, section 8) and G3 passed on the pooled run with no arm flagged,
+  so `no_flagged_arm_truncation` did not run. The numbers are in the reports above.
+- From here on, anything computed from these shards that is not in the reports is exploratory and
+  is labelled so (section 10.2, item 9).
