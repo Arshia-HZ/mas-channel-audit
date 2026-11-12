@@ -18,3 +18,8 @@ runs/
 # Downloaded run results (large, private; raw data lives in the HF dataset)
 results/
 notebooks/__marimo__/
+
+# Agent skills installed locally (marimo-pair); not part of the artifact
+.agents/
+.claude/skills/
+skills-lock.json

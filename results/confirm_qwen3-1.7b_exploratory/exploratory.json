@@ -1,0 +1,1514 @@
+{
+ "banner": "EXPLORATORY: descriptive, written after the analysis freeze; not a preregistered result (PREREG 10.2, item 9)",
+ "model_id": "Qwen/Qwen3-1.7B",
+ "replicates": 2,
+ "n_problems": 600,
+ "arms": [
+  "self_reflect",
+  "answer_only",
+  "answer_conf",
+  "dissent_only",
+  "failure_cause",
+  "full_solution",
+  "placebo",
+  "failure_cause_v2"
+ ],
+ "changes": {
+  "self_reflect": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.07055555555555555,
+     "ci95_low": 0.058333333333333334,
+     "ci95_high": 0.08305555555555555,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.6330555555555555,
+     "ci95_low": 0.6025,
+     "ci95_high": 0.663611111111111,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.2525,
+     "ci95_low": 0.2275,
+     "ci95_high": 0.27777777777777773,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.03166666666666667,
+    "ci95_low": 0.02361111111111111,
+    "ci95_high": 0.03972222222222222,
+    "n_problems": 600
+   }
+  },
+  "answer_only": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.03805555555555555,
+     "ci95_low": 0.03054861111111111,
+     "ci95_high": 0.04611111111111111,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.006388888888888888,
+     "ci95_low": 0.0038888888888888883,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.06722222222222221,
+     "ci95_low": 0.05527777777777776,
+     "ci95_high": 0.07972222222222221,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.6327777777777777,
+     "ci95_low": 0.6022222222222222,
+     "ci95_high": 0.6630555555555555,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.25555555555555554,
+     "ci95_low": 0.2302777777777778,
+     "ci95_high": 0.28027777777777774,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.03166666666666667,
+    "ci95_low": 0.02360416666666667,
+    "ci95_high": 0.04027777777777777,
+    "n_problems": 600
+   }
+  },
+  "answer_conf": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.03944444444444444,
+     "ci95_low": 0.03194444444444444,
+     "ci95_high": 0.04722222222222222,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.014444444444444444,
+     "ci95_low": 0.01,
+     "ci95_high": 0.019166666666666665,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.06833333333333333,
+     "ci95_low": 0.056388888888888884,
+     "ci95_high": 0.08083333333333333,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.6247222222222222,
+     "ci95_low": 0.595,
+     "ci95_high": 0.6547222222222222,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.25305555555555553,
+     "ci95_low": 0.2280555555555555,
+     "ci95_high": 0.2780555555555555,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.025,
+    "ci95_low": 0.015833333333333335,
+    "ci95_high": 0.034166666666666665,
+    "n_problems": 600
+   }
+  },
+  "dissent_only": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.03416666666666666,
+     "ci95_low": 0.0275,
+     "ci95_high": 0.04138888888888888,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.003333333333333333,
+     "ci95_low": 0.0013888888888888887,
+     "ci95_high": 0.005555555555555555,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.05388888888888888,
+     "ci95_low": 0.04444444444444444,
+     "ci95_high": 0.06388888888888888,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.6358333333333334,
+     "ci95_low": 0.6055555555555555,
+     "ci95_high": 0.6666666666666665,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.2727777777777778,
+     "ci95_low": 0.24694444444444444,
+     "ci95_high": 0.29888888888888887,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.030833333333333334,
+    "ci95_low": 0.023611111111111114,
+    "ci95_high": 0.03833333333333333,
+    "n_problems": 600
+   }
+  },
+  "failure_cause": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.0425,
+     "ci95_low": 0.034444444444444444,
+     "ci95_high": 0.050833333333333335,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.009444444444444443,
+     "ci95_low": 0.00611111111111111,
+     "ci95_high": 0.013333333333333332,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.08444444444444445,
+     "ci95_low": 0.07083333333333333,
+     "ci95_high": 0.0986111111111111,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.6297222222222222,
+     "ci95_low": 0.5997222222222222,
+     "ci95_high": 0.6597222222222222,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.2338888888888889,
+     "ci95_low": 0.2105486111111111,
+     "ci95_high": 0.25722222222222224,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.03305555555555555,
+    "ci95_low": 0.024166666666666666,
+    "ci95_high": 0.04222222222222222,
+    "n_problems": 600
+   }
+  },
+  "full_solution": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.10777777777777776,
+     "ci95_low": 0.09555555555555555,
+     "ci95_high": 0.12,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.04222222222222222,
+     "ci95_low": 0.035,
+     "ci95_high": 0.049722222222222216,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.13277777777777777,
+     "ci95_low": 0.11333333333333333,
+     "ci95_high": 0.1525,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.5969444444444444,
+     "ci95_low": 0.5652777777777778,
+     "ci95_high": 0.628611111111111,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.12027777777777776,
+     "ci95_low": 0.10361111111111111,
+     "ci95_high": 0.13777777777777775,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.06555555555555556,
+    "ci95_low": 0.05222222222222222,
+    "ci95_high": 0.07916666666666666,
+    "n_problems": 600
+   }
+  },
+  "placebo": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.026111111111111106,
+     "ci95_low": 0.019999999999999997,
+     "ci95_high": 0.033055555555555546,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.13416666666666666,
+     "ci95_low": 0.12,
+     "ci95_high": 0.14888888888888885,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.1736111111111111,
+     "ci95_low": 0.15277777777777776,
+     "ci95_high": 0.19444444444444442,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.505,
+     "ci95_low": 0.47583333333333333,
+     "ci95_high": 0.5344513888888889,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.1611111111111111,
+     "ci95_low": 0.14305555555555555,
+     "ci95_high": 0.17944444444444443,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": -0.10805555555555554,
+    "ci95_low": -0.12388888888888891,
+    "ci95_high": -0.09222222222222222,
+    "n_problems": 600
+   }
+  },
+  "failure_cause_v2": {
+   "shares": {
+    "wrong_to_correct": {
+     "mean": 0.035833333333333335,
+     "ci95_low": 0.028888888888888888,
+     "ci95_high": 0.043333333333333335,
+     "n_problems": 600
+    },
+    "correct_to_wrong": {
+     "mean": 0.007222222222222222,
+     "ci95_low": 0.004722222222222221,
+     "ci95_high": 0.01,
+     "n_problems": 600
+    },
+    "wrong_to_other_wrong": {
+     "mean": 0.07222222222222222,
+     "ci95_low": 0.06,
+     "ci95_high": 0.08472222222222221,
+     "n_problems": 600
+    },
+    "unchanged_correct": {
+     "mean": 0.6319444444444444,
+     "ci95_low": 0.6019444444444445,
+     "ci95_high": 0.6622222222222222,
+     "n_problems": 600
+    },
+    "unchanged_wrong": {
+     "mean": 0.25277777777777777,
+     "ci95_low": 0.22777777777777777,
+     "ci95_high": 0.2772222222222222,
+     "n_problems": 600
+    }
+   },
+   "net": {
+    "mean": 0.028611111111111108,
+    "ci95_low": 0.020833333333333332,
+    "ci95_high": 0.03666666666666667,
+    "n_problems": 600
+   }
+  }
+ },
+ "source": {
+  "wrong_to_correct": {
+   "answer_only": {
+    "total": {
+     "mean": 0.03805555555555555,
+     "ci95_low": 0.03054861111111111,
+     "ci95_high": 0.04611111111111111,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.011944444444444443,
+     "ci95_low": 0.004722222222222222,
+     "ci95_high": 0.01888888888888889,
+     "n_problems": 600
+    }
+   },
+   "answer_conf": {
+    "total": {
+     "mean": 0.03944444444444444,
+     "ci95_low": 0.03194444444444444,
+     "ci95_high": 0.04722222222222222,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.013333333333333334,
+     "ci95_low": 0.006388888888888889,
+     "ci95_high": 0.020277777777777777,
+     "n_problems": 600
+    }
+   },
+   "dissent_only": {
+    "total": {
+     "mean": 0.03416666666666666,
+     "ci95_low": 0.0275,
+     "ci95_high": 0.04138888888888888,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.008055555555555555,
+     "ci95_low": 0.0013888888888888892,
+     "ci95_high": 0.014166666666666666,
+     "n_problems": 600
+    }
+   },
+   "failure_cause": {
+    "total": {
+     "mean": 0.0425,
+     "ci95_low": 0.034444444444444444,
+     "ci95_high": 0.050833333333333335,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.016388888888888887,
+     "ci95_low": 0.009444444444444443,
+     "ci95_high": 0.023333333333333334,
+     "n_problems": 600
+    }
+   },
+   "full_solution": {
+    "total": {
+     "mean": 0.10777777777777776,
+     "ci95_low": 0.09555555555555555,
+     "ci95_high": 0.12,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.08166666666666667,
+     "ci95_low": 0.07027777777777777,
+     "ci95_high": 0.09305555555555554,
+     "n_problems": 600
+    }
+   },
+   "placebo": {
+    "total": {
+     "mean": 0.026111111111111106,
+     "ci95_low": 0.019999999999999997,
+     "ci95_high": 0.033055555555555546,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.0,
+     "ci95_low": 0.0,
+     "ci95_high": 0.0,
+     "n_problems": 600
+    }
+   },
+   "failure_cause_v2": {
+    "total": {
+     "mean": 0.035833333333333335,
+     "ci95_low": 0.028888888888888888,
+     "ci95_high": 0.043333333333333335,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03777777777777777,
+     "ci95_low": 0.03027777777777778,
+     "ci95_high": 0.04555555555555555,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.011666666666666667,
+     "ci95_low": -0.017777777777777778,
+     "ci95_high": -0.005277777777777778,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.009722222222222222,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.01583333333333333,
+     "n_problems": 600
+    }
+   }
+  },
+  "correct_to_wrong": {
+   "answer_only": {
+    "total": {
+     "mean": 0.006388888888888888,
+     "ci95_low": 0.0038888888888888883,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": -0.12777777777777777,
+     "ci95_low": -0.14222222222222222,
+     "ci95_high": -0.1136111111111111,
+     "n_problems": 600
+    }
+   },
+   "answer_conf": {
+    "total": {
+     "mean": 0.014444444444444444,
+     "ci95_low": 0.01,
+     "ci95_high": 0.019166666666666665,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": -0.11972222222222222,
+     "ci95_low": -0.13444444444444442,
+     "ci95_high": -0.10555555555555554,
+     "n_problems": 600
+    }
+   },
+   "dissent_only": {
+    "total": {
+     "mean": 0.003333333333333333,
+     "ci95_low": 0.0013888888888888887,
+     "ci95_high": 0.005555555555555555,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": -0.13083333333333333,
+     "ci95_low": -0.14555555555555555,
+     "ci95_high": -0.11666666666666667,
+     "n_problems": 600
+    }
+   },
+   "failure_cause": {
+    "total": {
+     "mean": 0.009444444444444443,
+     "ci95_low": 0.00611111111111111,
+     "ci95_high": 0.013333333333333332,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": -0.12472222222222222,
+     "ci95_low": -0.13916666666666663,
+     "ci95_high": -0.11055555555555555,
+     "n_problems": 600
+    }
+   },
+   "full_solution": {
+    "total": {
+     "mean": 0.04222222222222222,
+     "ci95_low": 0.035,
+     "ci95_high": 0.049722222222222216,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": -0.09194444444444444,
+     "ci95_low": -0.1075,
+     "ci95_high": -0.07666666666666666,
+     "n_problems": 600
+    }
+   },
+   "placebo": {
+    "total": {
+     "mean": 0.13416666666666666,
+     "ci95_low": 0.12,
+     "ci95_high": 0.14888888888888885,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.0,
+     "ci95_low": 0.0,
+     "ci95_high": 0.0,
+     "n_problems": 600
+    }
+   },
+   "failure_cause_v2": {
+    "total": {
+     "mean": 0.007222222222222222,
+     "ci95_low": 0.004722222222222221,
+     "ci95_high": 0.01,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.0061111111111111106,
+     "ci95_low": 0.003611111111111111,
+     "ci95_high": 0.009166666666666667,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": 0.12805555555555556,
+     "ci95_low": 0.11388888888888889,
+     "ci95_high": 0.14250694444444434,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": -0.12694444444444442,
+     "ci95_low": -0.14166666666666664,
+     "ci95_high": -0.11277777777777777,
+     "n_problems": 600
+    }
+   }
+  },
+  "net": {
+   "answer_only": {
+    "total": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02360416666666667,
+     "ci95_high": 0.04027777777777777,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.13972222222222222,
+     "ci95_low": 0.12416666666666666,
+     "ci95_high": 0.15583333333333332,
+     "n_problems": 600
+    }
+   },
+   "answer_conf": {
+    "total": {
+     "mean": 0.025,
+     "ci95_low": 0.015833333333333335,
+     "ci95_high": 0.034166666666666665,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.13305555555555554,
+     "ci95_low": 0.11722222222222221,
+     "ci95_high": 0.14916666666666667,
+     "n_problems": 600
+    }
+   },
+   "dissent_only": {
+    "total": {
+     "mean": 0.030833333333333334,
+     "ci95_low": 0.023611111111111114,
+     "ci95_high": 0.03833333333333333,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.13888888888888887,
+     "ci95_low": 0.12305555555555557,
+     "ci95_high": 0.15527777777777776,
+     "n_problems": 600
+    }
+   },
+   "failure_cause": {
+    "total": {
+     "mean": 0.03305555555555555,
+     "ci95_low": 0.024166666666666666,
+     "ci95_high": 0.04222222222222222,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.1411111111111111,
+     "ci95_low": 0.12527777777777777,
+     "ci95_high": 0.15666666666666668,
+     "n_problems": 600
+    }
+   },
+   "full_solution": {
+    "total": {
+     "mean": 0.06555555555555556,
+     "ci95_low": 0.05222222222222222,
+     "ci95_high": 0.07916666666666666,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.1736111111111111,
+     "ci95_low": 0.155,
+     "ci95_high": 0.19333333333333333,
+     "n_problems": 600
+    }
+   },
+   "placebo": {
+    "total": {
+     "mean": -0.10805555555555554,
+     "ci95_low": -0.12388888888888891,
+     "ci95_high": -0.09222222222222222,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.0,
+     "ci95_low": 0.0,
+     "ci95_high": 0.0,
+     "n_problems": 600
+    }
+   },
+   "failure_cause_v2": {
+    "total": {
+     "mean": 0.028611111111111108,
+     "ci95_low": 0.020833333333333332,
+     "ci95_high": 0.03666666666666667,
+     "n_problems": 600
+    },
+    "spontaneous": {
+     "mean": 0.03166666666666667,
+     "ci95_low": 0.02361111111111111,
+     "ci95_high": 0.03972222222222222,
+     "n_problems": 600
+    },
+    "form": {
+     "mean": -0.13972222222222222,
+     "ci95_low": -0.1558333333333333,
+     "ci95_high": -0.12444444444444443,
+     "n_problems": 600
+    },
+    "content": {
+     "mean": 0.13666666666666666,
+     "ci95_low": 0.12138888888888888,
+     "ci95_high": 0.15277777777777776,
+     "n_problems": 600
+    }
+   }
+  }
+ },
+ "diversity": {
+  "round0": {
+   "mean": 1.4716666666666667,
+   "ci95_low": 1.4225,
+   "ci95_high": 1.52,
+   "n_problems": 600
+  },
+  "unanimous_round0": 0.6141666666666666,
+  "arms": {
+   "self_reflect": {
+    "after": {
+     "mean": 1.5916666666666666,
+     "ci95_low": 1.5383333333333333,
+     "ci95_high": 1.6441666666666668,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.12,
+     "ci95_low": 0.08583333333333333,
+     "ci95_high": 0.15666666666666668,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.5666666666666667
+   },
+   "answer_only": {
+    "after": {
+     "mean": 1.5708333333333333,
+     "ci95_low": 1.5191666666666668,
+     "ci95_high": 1.6225,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.09916666666666667,
+     "ci95_low": 0.06583333333333333,
+     "ci95_high": 0.13416666666666666,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.5733333333333334
+   },
+   "answer_conf": {
+    "after": {
+     "mean": 1.595,
+     "ci95_low": 1.5425,
+     "ci95_high": 1.6466666666666667,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.12333333333333334,
+     "ci95_low": 0.09,
+     "ci95_high": 0.1575,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.5533333333333333
+   },
+   "dissent_only": {
+    "after": {
+     "mean": 1.5341666666666667,
+     "ci95_low": 1.48,
+     "ci95_high": 1.5883333333333334,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.0625,
+     "ci95_low": 0.035833333333333335,
+     "ci95_high": 0.09,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.5958333333333333
+   },
+   "failure_cause": {
+    "after": {
+     "mean": 1.5941666666666667,
+     "ci95_low": 1.5425,
+     "ci95_high": 1.6466666666666667,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.1225,
+     "ci95_low": 0.085,
+     "ci95_high": 0.16166666666666665,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.5608333333333333
+   },
+   "full_solution": {
+    "after": {
+     "mean": 1.2908333333333333,
+     "ci95_low": 1.2566666666666666,
+     "ci95_high": 1.325,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": -0.18083333333333335,
+     "ci95_low": -0.22583333333333333,
+     "ci95_high": -0.13416666666666666,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.7575
+   },
+   "placebo": {
+    "after": {
+     "mean": 1.9925,
+     "ci95_low": 1.9366666666666668,
+     "ci95_high": 2.0483333333333333,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.5208333333333334,
+     "ci95_low": 0.47,
+     "ci95_high": 0.5725,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.34
+   },
+   "failure_cause_v2": {
+    "after": {
+     "mean": 1.6008333333333333,
+     "ci95_low": 1.5466666666666666,
+     "ci95_high": 1.6541666666666666,
+     "n_problems": 600
+    },
+    "change": {
+     "mean": 0.12916666666666668,
+     "ci95_low": 0.09416666666666666,
+     "ci95_high": 0.16583333333333333,
+     "n_problems": 600
+    },
+    "unanimous_after": 0.5575
+   }
+  }
+ },
+ "headroom": {
+  "recoverable_units": 31,
+  "plurality_right_units": 801,
+  "arms": {
+   "self_reflect": {
+    "recovered": {
+     "value": 0.2043010752688172,
+     "numerator": 6.333333333333333,
+     "denominator": 31.0,
+     "ci95_low": 0.07407407407407407,
+     "ci95_high": 0.3611111111111111,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.9925093632958801,
+     "numerator": 795.0,
+     "denominator": 801.0,
+     "ci95_low": 0.9871944931818882,
+     "ci95_high": 0.9969339193463193,
+     "n_problems": 444
+    }
+   },
+   "answer_only": {
+    "recovered": {
+     "value": 0.07526881720430106,
+     "numerator": 2.333333333333333,
+     "denominator": 31.0,
+     "ci95_low": 0.0,
+     "ci95_high": 0.1764705882352941,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.9929255097794423,
+     "numerator": 795.3333333333333,
+     "denominator": 801.0,
+     "ci95_low": 0.9879132708311816,
+     "ci95_high": 0.9972573839662447,
+     "n_problems": 444
+    }
+   },
+   "answer_conf": {
+    "recovered": {
+     "value": 0.18279569892473116,
+     "numerator": 5.666666666666666,
+     "denominator": 31.0,
+     "ci95_low": 0.06172839506172839,
+     "ci95_high": 0.3333333333333333,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.9879317519766957,
+     "numerator": 791.3333333333333,
+     "denominator": 801.0,
+     "ci95_low": 0.9798922056384743,
+     "ci95_high": 0.9947715826878339,
+     "n_problems": 444
+    }
+   },
+   "dissent_only": {
+    "recovered": {
+     "value": 0.1075268817204301,
+     "numerator": 3.333333333333333,
+     "denominator": 31.0,
+     "ci95_low": 0.011102150537634416,
+     "ci95_high": 0.22916666666666669,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.9927174365376612,
+     "numerator": 795.1666666666666,
+     "denominator": 801.0,
+     "ci95_low": 0.9872916666666667,
+     "ci95_high": 0.9974261626379727,
+     "n_problems": 444
+    }
+   },
+   "failure_cause": {
+    "recovered": {
+     "value": 0.23655913978494622,
+     "numerator": 7.333333333333333,
+     "denominator": 31.0,
+     "ci95_low": 0.0967741935483871,
+     "ci95_high": 0.394744964262508,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.9910528506034123,
+     "numerator": 793.8333333333333,
+     "denominator": 801.0,
+     "ci95_low": 0.9846407836809149,
+     "ci95_high": 0.9964977338277708,
+     "n_problems": 444
+    }
+   },
+   "full_solution": {
+    "recovered": {
+     "value": 0.3655913978494623,
+     "numerator": 11.333333333333332,
+     "denominator": 31.0,
+     "ci95_low": 0.2043010752688172,
+     "ci95_high": 0.5384615384615384,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.9721181856013317,
+     "numerator": 778.6666666666666,
+     "denominator": 801.0,
+     "ci95_low": 0.9603375273855891,
+     "ci95_high": 0.9824561403508771,
+     "n_problems": 444
+    }
+   },
+   "placebo": {
+    "recovered": {
+     "value": 0.1935483870967742,
+     "numerator": 6.0,
+     "denominator": 31.0,
+     "ci95_low": 0.08328252032520328,
+     "ci95_high": 0.32407407407407407,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.8528922180607573,
+     "numerator": 683.1666666666666,
+     "denominator": 801.0,
+     "ci95_low": 0.8291864860140952,
+     "ci95_high": 0.875553077963796,
+     "n_problems": 444
+    }
+   },
+   "failure_cause_v2": {
+    "recovered": {
+     "value": 0.16129032258064516,
+     "numerator": 5.0,
+     "denominator": 31.0,
+     "ci95_low": 0.038461538461538464,
+     "ci95_high": 0.3055555555555556,
+     "n_problems": 31
+    },
+    "retained": {
+     "value": 0.992093216812318,
+     "numerator": 794.6666666666667,
+     "denominator": 801.0,
+     "ci95_low": 0.9871475822530834,
+     "ci95_high": 0.9964671654197839,
+     "n_problems": 444
+    }
+   }
+  }
+ },
+ "conformity": {
+  "self_reflect": {
+   "copied_wrong_per_agent": {
+    "value": 0.009166666666666667,
+    "numerator": 33.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.006111111111111111,
+    "ci95_high": 0.0125,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.027385892116182572,
+    "numerator": 33.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.01837047867580833,
+    "ci95_high": 0.037340792849526856,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.1912568306010929,
+    "numerator": 105.0,
+    "denominator": 549.0,
+    "ci95_low": 0.15384615384615385,
+    "ci95_high": 0.23146714164746165,
+    "n_problems": 275
+   }
+  },
+  "answer_only": {
+   "copied_wrong_per_agent": {
+    "value": 0.016666666666666666,
+    "numerator": 60.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.012222222222222223,
+    "ci95_high": 0.021666666666666667,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.04979253112033195,
+    "numerator": 60.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.03675840241629715,
+    "ci95_high": 0.06407215047725996,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.1930783242258652,
+    "numerator": 106.0,
+    "denominator": 549.0,
+    "ci95_low": 0.1543201058201058,
+    "ci95_high": 0.2344967603298573,
+    "n_problems": 275
+   }
+  },
+  "answer_conf": {
+   "copied_wrong_per_agent": {
+    "value": 0.011666666666666667,
+    "numerator": 42.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.008055555555555555,
+    "ci95_high": 0.015555555555555555,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.034854771784232366,
+    "numerator": 42.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.023809523809523808,
+    "ci95_high": 0.04677442935295227,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.20765027322404372,
+    "numerator": 114.0,
+    "denominator": 549.0,
+    "ci95_low": 0.16987740805604204,
+    "ci95_high": 0.24775583482944344,
+    "n_problems": 275
+   }
+  },
+  "dissent_only": {
+   "copied_wrong_per_agent": {
+    "value": 0.01,
+    "numerator": 36.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.006666666666666667,
+    "ci95_high": 0.01361111111111111,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.02987551867219917,
+    "numerator": 36.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.020122356352564062,
+    "ci95_high": 0.04079784379092374,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.18397085610200364,
+    "numerator": 101.0,
+    "denominator": 549.0,
+    "ci95_low": 0.14821428571428572,
+    "ci95_high": 0.22245758532254878,
+    "n_problems": 275
+   }
+  },
+  "failure_cause": {
+   "copied_wrong_per_agent": {
+    "value": 0.011111111111111112,
+    "numerator": 40.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.0075,
+    "ci95_high": 0.015277777777777777,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.03319502074688797,
+    "numerator": 40.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.0226890756302521,
+    "ci95_high": 0.04522623396588204,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.21493624772313297,
+    "numerator": 118.0,
+    "denominator": 549.0,
+    "ci95_low": 0.1763668430335097,
+    "ci95_high": 0.25555611899932384,
+    "n_problems": 275
+   }
+  },
+  "full_solution": {
+   "copied_wrong_per_agent": {
+    "value": 0.11166666666666666,
+    "numerator": 402.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.09694444444444444,
+    "ci95_high": 0.12694444444444444,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.33360995850622405,
+    "numerator": 402.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.301666567695962,
+    "ci95_high": 0.3653044203502919,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.6429872495446266,
+    "numerator": 353.0,
+    "denominator": 549.0,
+    "ci95_low": 0.5966794602258838,
+    "ci95_high": 0.6907025763414777,
+    "n_problems": 275
+   }
+  },
+  "placebo": {
+   "copied_wrong_per_agent": {
+    "value": 0.0075,
+    "numerator": 27.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.004722222222222222,
+    "ci95_high": 0.010555555555555556,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.022406639004149378,
+    "numerator": 27.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.014229166322126117,
+    "ci95_high": 0.03135896307119753,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.1366120218579235,
+    "numerator": 75.0,
+    "denominator": 549.0,
+    "ci95_low": 0.10535479323308271,
+    "ci95_high": 0.17017637178051512,
+    "n_problems": 275
+   }
+  },
+  "failure_cause_v2": {
+   "copied_wrong_per_agent": {
+    "value": 0.009166666666666667,
+    "numerator": 33.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.005833333333333334,
+    "ci95_high": 0.012777777777777779,
+    "n_problems": 600
+   },
+   "exposed_to_wrong": {
+    "value": 0.3347222222222222,
+    "numerator": 1205.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.30583333333333335,
+    "ci95_high": 0.3630555555555556,
+    "n_problems": 600
+   },
+   "copied_wrong_given_exposed": {
+    "value": 0.027385892116182572,
+    "numerator": 33.0,
+    "denominator": 1205.0,
+    "ci95_low": 0.017741799258936358,
+    "ci95_high": 0.038232795242141036,
+    "n_problems": 337
+   },
+   "exposed_to_right": {
+    "value": 0.1525,
+    "numerator": 549.0,
+    "denominator": 3600.0,
+    "ci95_low": 0.13666666666666666,
+    "ci95_high": 0.1686111111111111,
+    "n_problems": 600
+   },
+   "adopted_right_given_exposed": {
+    "value": 0.18214936247723132,
+    "numerator": 100.0,
+    "denominator": 549.0,
+    "ci95_low": 0.14682448667540413,
+    "ci95_high": 0.2203748830798011,
+    "n_problems": 275
+   }
+  }
+ },
+ "status": {
+  "exploratory": true
+ }
+}
