@@ -8,7 +8,10 @@ Successor to [`causal-mas-distill`](https://github.com/Arshia-HZ/causal-mas-dist
 
 ## Status
 
-M0 to M3 are done (the T4 backend check ran; see `PREREG.md` section 2 and 3). M4 (problem freeze and model screening) is done. M5 (pilot and gates) tooling is implemented and tested; the pilot has not been run yet.
+**Closed at tag `audit-final` (2026-11-14).** M0 to M7 are done: the pilot, the confirmatory run (600 problems, 2 replicates, Qwen3-1.7B) and the frozen analysis, which ran once. The result is a precise null: no message channel beats budget-matched self-consistency. The written record is [`reports/channel_audit_M0-M7_report.md`](reports/channel_audit_M0-M7_report.md); the preregistration, its amendments and the run record are in `PREREG.md` (sections 10 and 11); the primary and exploratory reports are in `results/`.
+
+M8 (second family, Qwen3-4B, mixed teams) was not run; it is superseded by a follow-up study of trained aggregators, which lives in [`trained-reader-audit`](https://github.com/Arshia-HZ/trained-reader-audit) and imports this package pinned at `audit-final`. This repository takes no further changes except corrections recorded in `PREREG.md`.
+
 See `AGENTS.md` for contributor and coding-agent rules.
 
 ## Development

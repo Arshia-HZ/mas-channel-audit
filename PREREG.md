@@ -6,6 +6,7 @@ evidence behind them. Hypotheses, gates G1 to G4 and the power calculation are a
 Items marked **[confirm]** are proposed wording and need the owner's sign-off (none left).
 Added on 2026-11-09: section 9 now shows the status of the open items, and section 10 records
 the confirmatory run and the frozen analysis. Sections 1 to 8 are unchanged.
+Added on 2026-11-14: section 11 closes the audit. Sections 1 to 10 are unchanged.
 
 ## 1. Problems
 
@@ -548,3 +549,25 @@ evidence of a difference.
   so `no_flagged_arm_truncation` did not run. The numbers are in the reports above.
 - From here on, anything computed from these shards that is not in the reports is exploratory and
   is labelled so (section 10.2, item 9).
+
+## 11. Closing the audit (added 2026-11-14)
+
+- **Status.** The audit (M0 to M7) is complete. The confirmatory result is a precise null:
+  no channel beats matched self-consistency (section 10.4; reports in
+  `results/confirm_qwen3-1.7b_analysis/`). The written record is
+  `reports/channel_audit_M0-M7_report.md`. The repository is closed at the tag
+  `audit-final`; it takes no further changes except corrections recorded in this file.
+- **M8 is superseded, not run.** The plan's M8 (second family, Qwen3-4B, mixed teams) and
+  the open item of section 9 (choose a second family) are replaced by a follow-up study of
+  trained aggregators. The owner changed direction between 2026-11-12 and 2026-11-14 in
+  response to the null. No M8 generation was run. The follow-up lives in
+  `Arshia-HZ/trained-reader-audit`, which imports this package pinned at `audit-final`
+  and has its own preregistration.
+- **Exploratory work after the freeze.** The decomposition of section 10.2 item 9 (change
+  types, source of change, diversity, headroom, conformity) and its figures were run on
+  2026-11-09 with `scripts/31_decompose.py` and `scripts/32_figures.py` (commit `a1bc1d1`).
+  They are descriptive, were written after the freeze, and never replace a primary table.
+  The reports are in `results/confirm_qwen3-1.7b_exploratory/`.
+- **Reuse of the audit data.** The follow-up study reads the 600 confirmatory problems and
+  their round-0 and pool generations as development data ("dev"). This happened after the
+  analysis had run; nothing in sections 1 to 10 changes, and the analysis is not re-run.
